@@ -1,0 +1,8 @@
+A lisper's guide to the lower levels.
+
+Virgil is an extensible and high level foreign function interface(FFI),
+built on top of CFFI, and oriented towards marshalling lisp data
+into raw memory and back.
+It currently supports x86 and x86-64 platforms.
+
+..More docs upcoming
