@@ -1,1 +1,6 @@
-Initial release
+v0.1.1
+    * TRIVIAL-FEATURES added to the list of dependencies
+    * enchancement: New interfaces - WITH-VALUE and WITH-VALUES
+
+v0.1.0
+    * Initial release
