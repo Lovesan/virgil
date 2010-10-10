@@ -72,8 +72,12 @@
     #:define-aggregate-type
     
     ;;primitive types
+    #:char-t
+    #:uchar-t
+    #:wchar-t
     #:sbyte
     #:ubyte
+    #:byte
     #:short
     #:ushort
     #:int
@@ -94,6 +98,7 @@
     #:uint64
     #:size-t
     #:ssize-t
+    #:ptrdiff-t
     #:single
     #:float
     #:double
@@ -141,7 +146,7 @@
     
     ;;struct stuff
     #:struct
-    #:struct-slot-offset
+    #:offsetof
     #:define-struct
     #:union
     #:define-union

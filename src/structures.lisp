@@ -117,7 +117,7 @@
                         `(gethash ',name ,value)
                         slot-type))))))
 
-(defun struct-slot-offset (slot-name type)
+(defun offsetof (type slot-name)
   (declare (type symbol slot-name))
   (let ((type (parse-typespec type)))
     (unless (typep type 'struct-type)
@@ -129,7 +129,7 @@
                       (unparse-type type)
                       slot-name))))
 
-(define-compiler-macro struct-slot-offset (&whole form slot-name type)
+(define-compiler-macro offsetof (&whole form type slot-name)
   (multiple-value-bind
       (type constantp)
       (eval-if-constantp type)
@@ -138,13 +138,26 @@
         (unless (typep type 'struct-type)
           (error "~s is not a structure type"
                  (unparse-type type)))
-        (once-only (slot-name)
-          `(case ,slot-name
-             ,@(loop :for (name slot-type offset) :in (struct-slots type)
-                 :collect `(,name ,offset))
-             (T (error "Structure type ~s has no slot named ~s"
-                       ',(unparse-type type)
-                       ,slot-name)))))
+        (multiple-value-bind
+            (slot-name constantp) (eval-if-constantp slot-name)
+          (if constantp
+            (let ((slot (progn
+                          (check-type slot-name symbol)
+                          (find slot-name (struct-slots type)
+                                :key #'first :test #'eq))))
+              (if (null slot)
+                (error "Structure type ~s has no slot named ~s"
+                       slot-name (unparse-type type))
+                (third slot)))
+            (once-only (slot-name)
+              `(progn
+                 (check-type ,slot-name symbol)
+                 (case ,slot-name
+                   ,@(loop :for (name slot-type offset) :in (struct-slots type)     
+                       :collect `(,name ,offset))
+                   (T (error "Structure type ~s has no slot named ~s"
+                             ',(unparse-type type)
+                             ,slot-name))))))))
       form)))
 
 (define-aggregate-type named-struct-type (struct-type)
@@ -391,6 +404,7 @@
          (notice-struct-definition
            ',name ',ctor-name ',conc-name ',(when include-p include)
            ',(when align-p align) ',packed ',slots)
+         (declaim (inline ,ctor-name))
          (defstruct (,name
                       (:conc-name ,conc-name)
                       (:constructor ,ctor-name)
@@ -597,6 +611,7 @@
          (notice-union-definition
            ',name ',ctor-name ',conc-name ',(when include-p include)
            ',(when align-p align) ',slots)
+         (declaim (inline ,ctor-name))
          (defstruct (,name
                       (:conc-name ,conc-name)
                       (:constructor ,ctor-name)

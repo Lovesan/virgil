@@ -24,17 +24,23 @@
 
 (in-package #:virgil)
 
-(define-primitive-type sbyte
+(define-primitive-type char-t
   (:cffi-type :char)
-  (:lisp-type #.(%int-type :char t)))
+  (:lisp-type #.(%int-type :char)))
 
-(define-primitive-type ubyte
+(define-primitive-type uchar-t
   (:cffi-type :uchar)
   (:lisp-type #.(%int-type :uchar)))
 
+(define-primitive-type wchar-t
+  (:cffi-type #+windows :uint16
+              #-windows :uint32)
+  (:lisp-type #.(%int-type #+windows :uint16
+                           #-windows :uint32)))
+
 (define-primitive-type short
   (:cffi-type :short)
-  (:lisp-type #.(%int-type :short t)))
+  (:lisp-type #.(%int-type :short)))
 
 (define-primitive-type ushort
   (:cffi-type :ushort)
@@ -42,7 +48,7 @@
 
 (define-primitive-type int
   (:cffi-type :int)
-  (:lisp-type #.(%int-type :int t)))
+  (:lisp-type #.(%int-type :int)))
 
 (define-primitive-type uint
   (:cffi-type :uint)
@@ -50,7 +56,7 @@
 
 (define-primitive-type long
   (:cffi-type :long)
-  (:lisp-type #.(%int-type :long t)))
+  (:lisp-type #.(%int-type :long)))
 
 (define-primitive-type ulong
   (:cffi-type :ulong)
@@ -58,7 +64,7 @@
 
 (define-primitive-type llong
   (:cffi-type :llong)
-  (:lisp-type #.(%int-type :llong t)))
+  (:lisp-type #.(%int-type :llong)))
 
 (define-primitive-type ullong
   (:cffi-type :ullong)
@@ -91,25 +97,25 @@
 
 (define-primitive-type int8
   (:cffi-type :int8)
-  (:lisp-type #.(%int-type :int8 t)))
+  (:lisp-type #.(%int-type :int8)))
 (define-primitive-type uint8
   (:cffi-type :uint8)
   (:lisp-type #.(%int-type :uint8)))
 (define-primitive-type int16
   (:cffi-type :int16)
-  (:lisp-type #.(%int-type :int16 t)))
+  (:lisp-type #.(%int-type :int16)))
 (define-primitive-type uint16
   (:cffi-type :uint16)
-  (:lisp-type #.(%int-type :int16)))
+  (:lisp-type #.(%int-type :uint16)))
 (define-primitive-type int32
   (:cffi-type :int32)
-  (:lisp-type #.(%int-type :int32 t)))
+  (:lisp-type #.(%int-type :int32)))
 (define-primitive-type uint32
   (:cffi-type :uint32)
   (:lisp-type #.(%int-type :uint32)))
 (define-primitive-type int64
   (:cffi-type :int64)
-  (:lisp-type #.(%int-type :int64 t)))
+  (:lisp-type #.(%int-type :int64)))
 (define-primitive-type uint64
   (:cffi-type :uint64)
   (:lisp-type #.(%int-type :uint64)))
@@ -118,6 +124,15 @@
 (deftype size-t () 'uint-ptr)
 (defalias ssize-t () 'int-ptr)
 (deftype ssize-t () 'int-ptr)
+
+(defalias ptrdiff-t () 'ssize-t)
+(deftype ptrdiff-t () 'ssize-t)
+
+(defalias sbyte () 'int8)
+(deftype sbyte () 'int8)
+(defalias ubyte () 'uint8)
+(deftype ubyte () 'uint8)
+(defalias byte () 'uint8)
 
 (defalias float () 'single)
 
@@ -138,13 +153,13 @@
 
 (define-immediate-type char-type (generic-char-type)
   ()
-  (:base-type sbyte)
+  (:base-type uchar-t)
   (:simple-parser char)
   (:lisp-type (type) 'base-char))
 
 (define-immediate-type wchar-type (generic-char-type)
   ()
-  (:base-type ushort)
+  (:base-type wchar-t)
   (:simple-parser wchar)
   (:lisp-type (type) 'character))
 

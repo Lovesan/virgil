@@ -1,3 +1,15 @@
+v0.1.2
+    * Function STRUCT-SLOT-OFFSET was renamed to OFFSETOF
+        (syntax: OFFSETOF struct-type-name member-name)
+    * new feature: New primitive types:
+        CHAR-T, UCHAR-T, WCHAR-T and PTRDIFF-T
+    * enchancement: Improved translation of CFFI's integral types into
+        those of Common Lisp
+    * bug fix: Base type of CHAR type is now UCHAR-T, not SBYTE, and
+        that of WCHAR is now WCHAR-T, not USHORT
+    * bug fix: SBYTE and UBYTE are now aliases
+        for INT8 and UINT8 correspondingly
+
 v0.1.1
     * TRIVIAL-FEATURES added to the list of dependencies
     * enchancement: New interfaces - WITH-VALUE and WITH-VALUES
