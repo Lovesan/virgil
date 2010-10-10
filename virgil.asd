@@ -30,7 +30,7 @@
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :licence "MIT"
-  :depends-on (#:cffi #:alexandria #:babel)
+  :depends-on (#:trivial-features #:cffi #:alexandria #:babel)
   :components
   ((:module "src"
             :serial t

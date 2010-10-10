@@ -119,6 +119,8 @@
     #:with-references
     #:with-pointer
     #:with-pointers
+    #:with-value
+    #:with-values
     
     ;;sequence and array stuff
     #:sequence

@@ -219,3 +219,45 @@
     `(with-pointer ,(first specs)
        (with-pointers ,(rest specs)
          ,@body))))
+
+(defmacro with-value ((var pointer-form type &optional (mode :in) voidable)
+                      &body body)
+  (check-type mode (member :in :out :inout))
+  (multiple-value-bind
+      (type constantp) (eval-if-constantp type)
+    (if constantp
+      (expand-callback-dynamic-extent
+        var
+        pointer-form
+        body
+        (make-instance 'reference-type
+          :type (parse-typespec type)
+          :mode mode
+          :voidable (not (null voidable))))
+      (with-gensyms (pointer type-var)
+        `(let ((,pointer ,pointer-form)
+               (,type-var (parse-typespec ',type)))
+           (declare (type pointer ,pointer))
+           ,(let ((expansion
+                    (ecase mode
+                      (:in `(let ((,var (read-value ,pointer nil ,type-var)))
+                              ,@body))
+                      (:out `(let ((,var (prototype ,type-var)))
+                               (prog1 (progn ,@body)
+                                (write-value ,var ,pointer ,type-var))))
+                      (:inout `(let ((,var (read-value ,pointer nil ,type-var)))
+                                 (prog1 (progn ,@body)
+                                  (write-value ,var ,pointer ,type-var)))))))
+              (if voidable
+                `(if (&? ,pointer)
+                   ,expansion
+                   (let ((,var void))
+                     ,@body))
+                expansion)))))))
+
+(defmacro with-values ((&rest specs) &body body)
+  (if (endp specs)
+    `(progn ,@body)
+    `(with-value ,(first specs)
+       (with-values ,(rest specs)
+         ,@body))))
