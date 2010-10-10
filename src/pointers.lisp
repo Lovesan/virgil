@@ -31,10 +31,24 @@
 
 (defalias * () 'pointer)
 
+(declaim (inline &p))
+(defun &p (object)
+  (pointerp object))
+
 (declaim (inline &))
 (defun & (address)
   (declare (type size-t address))
   (make-pointer address))
+
+(declaim (inline &&))
+(defun && (pointer)
+  (declare (type pointer pointer))
+  (pointer-address pointer))
+
+(declaim inline &=)
+(defun &= (pointer1 pointer2)
+  (declare (type pointer pointer1 pointer2))
+  (pointer-eq pointer1 pointer2))
 
 (declaim (inline &+))
 (defun &+ (pointer offset &optional (type 'uint8))

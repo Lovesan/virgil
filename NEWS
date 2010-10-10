@@ -1,3 +1,10 @@
+v0.1.3
+    * Updated TODO
+    * new features: New pointer arithmetic functions:
+        ** &p (predicate for pointer)
+        ** &= (test for pointer address equality)
+        ** && (gets pointer address)
+
 v0.1.2
     * Function STRUCT-SLOT-OFFSET was renamed to OFFSETOF
         (syntax: OFFSETOF struct-type-name member-name)
