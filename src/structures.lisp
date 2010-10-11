@@ -102,7 +102,7 @@
          ,pointer)))
   (:cleaner (pointer value type)
     (loop :for (name slot-type offset) :in (struct-slots type)
-      :do (cleanup-value (&+ pointer offset)
+      :do (clean-value (&+ pointer offset)
                          (gethash name value)
                          slot-type)))
   (:cleaner-expansion (pointer-form value-form type)
@@ -112,7 +112,7 @@
                   (type hash-table ,value)
                   (ignorable ,pointer ,value))
          ,@(loop :for (name slot-type offset) :in (struct-slots type)
-             :collect (expand-cleanup-value
+             :collect (expand-clean-value
                         `(& ,pointer ,offset)
                         `(gethash ',name ,value)
                         slot-type))))))
@@ -245,12 +245,12 @@
          ,pointer)))
   (:cleaner (pointer value type)
     (when (struct-included type)
-      (cleanup-value pointer value (struct-included type)))
+      (clean-value pointer value (struct-included type)))
     (loop :with conc-name = (struct-conc-name type)
       :for (slot-name slot-type offset) :in (struct-slots type)
       :for accessor = (intern (format nil "~a~a" conc-name slot-name)
                               (struct-package type))
-      :do (cleanup-value (&+ pointer offset)
+      :do (clean-value (&+ pointer offset)
                          (funcall accessor value)
                          slot-type)))
   (:cleaner-expansion (pointer-form value-form type)
@@ -261,12 +261,12 @@
                   (type ,(lisp-type type) ,value)
                   (ignorable ,pointer ,value))
          ,(when (struct-included type)
-            (expand-cleanup-value pointer value (struct-included type)))
+            (expand-clean-value pointer value (struct-included type)))
          ,@(loop :with conc-name = (struct-conc-name type)
              :for (slot-name slot-type offset) :in (struct-slots type)
              :for accessor = (intern (format nil "~a~a" conc-name slot-name)
                                      (struct-package type))
-             :collect (expand-cleanup-value
+             :collect (expand-clean-value
                         `(&+ ,pointer ,offset)
                         `(,accessor ,value)
                         slot-type))))))
@@ -493,7 +493,7 @@
   (:cleaner (pointer value type)
     (loop :for (name slot-type) :in (struct-slots type)
       :do (when (typep value (lisp-type slot-type))
-            (return (cleanup-value pointer value slot-type)))
+            (return (clean-value pointer value slot-type)))
       :finally (if (typep value (union-default-type type))
                  (call-next-method pointer value type)
                  (error "~s is invalid value for union type ~s"
@@ -503,7 +503,7 @@
       `(etypecase ,value
          ,@(loop :for (name slot-type) :in (struct-slots type)
              :collect `(,(lisp-type slot-type)
-                        ,(expand-cleanup-value
+                        ,(expand-clean-value
                            pointer
                            value
                            slot-type)))

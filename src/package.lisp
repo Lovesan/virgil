@@ -44,12 +44,16 @@
     #:convert-value
     #:read-value
     #:write-value
-    #:cleanup-value
+    #:clean-value
+    #:allocate-value
+    #:free-value
     #:expand-translate-value
     #:expand-convert-value
     #:expand-read-value
     #:expand-write-value
-    #:expand-cleanup-value
+    #:expand-clean-value
+    #:expand-allocate-value
+    #:expand-free-value
     #:expand-dynamic-extent
     #:expand-reference-dynamic-extent
     #:expand-callback-dynamic-extent
@@ -59,10 +63,10 @@
     #:alignof
     #:convert
     #:translate
-    
-    ;;memory stuff
-    #:allocate-value
-    #:free-value
+    #:alloc
+    #:free
+    #:clean
+    #:clean-and-free
     
     ;;define new types with this
     #:define-type-parser

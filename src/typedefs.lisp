@@ -109,10 +109,10 @@
           (%type-method expand-convert-value converter-expansion name
                         (lisp-value-form-var type-var)))
        ,(when cleaner-p
-          (%type-method cleanup-value cleaner name
+          (%type-method clean-value cleaner name
                         (pointer-var value-var type-var)))
        ,(when cleaner-expansion-p
-          (%type-method expand-cleanup-value cleaner-expansion name
+          (%type-method expand-clean-value cleaner-expansion name
                         (pointer-form-var value-form-var type-var)))
        ,(when dynamic-extent-expansion-p
           (%type-method expand-dynamic-extent dynamic-extent-expansion name
@@ -192,7 +192,7 @@
           (%type-method write-value writer name
                         (value-var pointer-var type-var)))
        ,(when cleaner-p
-          (%type-method cleanup-value cleaner name
+          (%type-method clean-value cleaner name
                         (pointer-var value-var type-var)))
        ,(when reader-expansion-p
           (%type-method expand-read-value reader-expansion name
@@ -201,7 +201,7 @@
           (%type-method expand-write-value writer-expansion name
                         (value-form-var pointer-form-var type-var)))
        ,(when cleaner-expansion-p
-          (%type-method expand-cleanup-value cleaner-expansion name
+          (%type-method expand-clean-value cleaner-expansion name
                         (pointer-form-var value-form-var type-var)))
        ,(when rdx-p
           (%type-method expand-reference-dynamic-extent

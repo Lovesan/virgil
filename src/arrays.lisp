@@ -237,18 +237,18 @@
                 `(inc-pointer ,pointer (* ,i ,elt-size))
                 elt-type)))))))
 
-(defmethod cleanup-value (pointer value (type sequence-type))
+(defmethod clean-value (pointer value (type sequence-type))
   (let* ((elt-type (st-elt-type type))
          (elt-size (compute-fixed-size elt-type))
          (len (length value)))
     (declare (type pointer pointer)
              (type non-negative-fixnum len elt-size))
     (dotimes (i len)
-      (cleanup-value (inc-pointer pointer (* i elt-size))
+      (clean-value (inc-pointer pointer (* i elt-size))
                      (elt value i)
                      elt-type))))
 
-(defmethod expand-cleanup-value
+(defmethod expand-clean-value
     (pointer-form value-form (type sequence-type))
   (let* ((elt-type (st-elt-type type))
          (elt-size (compute-fixed-size elt-type)))
@@ -261,12 +261,12 @@
          (let ((,len (length ,value)))
            (declare (type non-negative-fixnum ,len))
            (%dotimes (,i ,len)
-             ,(expand-cleanup-value
+             ,(expand-clean-value
                 `(inc-pointer ,pointer (* ,i ,elt-size))
                 `(elt ,value ,i)
                 elt-type)))))))
 
-(defmethod cleanup-value (pointer value (type static-sequence-type))
+(defmethod clean-value (pointer value (type static-sequence-type))
   (let* ((elt-type (st-elt-type type))
          (elt-size (compute-fixed-size elt-type))
          (len (st-length type)))
@@ -274,11 +274,11 @@
              (type sequence value)
              (type non-negative-fixnum len elt-size))
     (dotimes (i len)
-      (cleanup-value (inc-pointer pointer (* i elt-size))
+      (clean-value (inc-pointer pointer (* i elt-size))
                      (elt value i)
                      elt-type))))
 
-(defmethod expand-cleanup-value
+(defmethod expand-clean-value
     (pointer-form value-form (type static-sequence-type))
   (let* ((elt-type (st-elt-type type))
          (elt-size (compute-fixed-size elt-type))
@@ -290,7 +290,7 @@
                   (type ,(lisp-type type) ,value)
                   (ignorable ,pointer ,value))
          (%dotimes (,i ,len)
-           ,(expand-cleanup-value
+           ,(expand-clean-value
               `(inc-pointer ,pointer (* ,i ,elt-size))
               `(elt ,value ,i)
               elt-type))))))
@@ -508,18 +508,18 @@
                 `(inc-pointer ,pointer (* ,i ,elt-size))
                 elt-type)))))))
 
-(defmethod cleanup-value (pointer value (type array-type))
+(defmethod clean-value (pointer value (type array-type))
   (let* ((elt-type (at-elt-type type))
          (elt-size (compute-fixed-size elt-type))
          (total-size (array-total-size value)))
     (declare (type pointer pointer)
              (type non-negative-fixnum elt-size total-size))
     (dotimes (i total-size)
-      (cleanup-value (inc-pointer pointer (* i elt-size))
+      (clean-value (inc-pointer pointer (* i elt-size))
                      (row-major-aref value i)
                      elt-type))))
 
-(defmethod expand-cleanup-value
+(defmethod expand-clean-value
     (pointer-form value-form (type array-type))
   (let* ((elt-type (at-elt-type type))
          (elt-size (compute-fixed-size elt-type)))
@@ -532,12 +532,12 @@
          (let ((,total-size (array-total-size ,value)))
            (declare (type non-negative-fixnum ,total-size))
            (%dotimes (,i ,total-size)
-             ,(expand-cleanup-value
+             ,(expand-clean-value
                 `(inc-pointer ,pointer (* ,i ,elt-size))
                 `(row-major-aref ,value ,i)
                 elt-type)))))))
 
-(defmethod cleanup-value (pointer value (type static-array-type))
+(defmethod clean-value (pointer value (type static-array-type))
   (let* ((elt-type (at-elt-type type))
          (elt-size (compute-fixed-size elt-type))
          (total-size (reduce #'* (at-dims type))))
@@ -545,11 +545,11 @@
              (type pointer pointer)
              (type array value))
     (dotimes (i total-size)
-      (cleanup-value (inc-pointer pointer (* i elt-size))
+      (clean-value (inc-pointer pointer (* i elt-size))
                      (row-major-aref value i)
                      elt-type))))
 
-(defmethod expand-cleanup-value
+(defmethod expand-clean-value
     (pointer-form value-form (type static-array-type))
   (let* ((elt-type (at-elt-type type))
          (elt-size (compute-fixed-size elt-type))
@@ -561,7 +561,7 @@
                   (type pointer ,pointer)
                   (ignorable ,pointer ,value))
          (%dotimes (,i ,total-size)
-           ,(expand-cleanup-value
+           ,(expand-clean-value
               `(inc-pointer ,pointer (* ,i ,elt-size))
               `(row-major-aref ,value ,i)
               elt-type))))))

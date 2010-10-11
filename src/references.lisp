@@ -41,11 +41,18 @@
   (:prototype-expansion (type)
     (expand-prototype (rtype-type type)))
   (:converter (lisp-value type)
-    (if (rtype-voidable-p type)
-      (if (voidp lisp-value)
-        &0
-        (allocate-value lisp-value (rtype-type type)))
-      (allocate-value lisp-value (rtype-type type))))
+    (let ((rtype (rtype-type type)))
+      (if (rtype-voidable-p type)
+        (if (voidp lisp-value)
+          &0
+          (let ((pointer (allocate-value lisp-value rtype)))
+            (declare (type pointer pointer))
+            (write-value lisp-value pointer rtype)
+            pointer))
+        (let ((pointer (allocate-value lisp-value rtype)))
+          (declare (type pointer pointer))
+          (write-value lisp-value pointer rtype)
+          pointer))))
   (:translator (raw-value type)
     (if (rtype-voidable-p type)
       (if (&? raw-value)      
@@ -53,18 +60,29 @@
         void)
       (read-value raw-value nil (rtype-type type))))
   (:cleaner (pointer value type)
-    (let ((ref (deref pointer '*)))
+    (let ((ref (deref pointer '*))
+          (rtype (rtype-type type)))
       (if (rtype-voidable-p type)
         (when (&? ref)
-          (free-value ref value (rtype-type type)))
-        (free-value ref value (rtype-type type)))))
+          (clean-value ref value rtype)
+          (free-value ref rtype))
+        (progn
+          (clean-value ref value rtype)
+          (free-value ref rtype)))))
   (:converter-expansion (lisp-value type)
-    (once-only (lisp-value)
-      (if (rtype-voidable-p type)
-        `(if (voidp ,lisp-value)
-           &0
-           (allocate-value ,lisp-value ,(rtype-type type)))
-        `(allocate-value ,lisp-value ,(rtype-type type)))))
+    (let ((rtype (rtype-type type)))
+      (once-only (lisp-value)
+        (with-gensyms (pointer)
+          (let ((expansion
+                  `(let ((,pointer ,(expand-allocate-value lisp-value rtype)))
+                     (declare (type pointer ,pointer))
+                     ,(expand-write-value lisp-value pointer rtype)
+                     ,pointer)))
+            (if (rtype-voidable-p type)
+              `(if (voidp ,lisp-value)
+                 &0
+                 ,expansion)
+              expansion))))))
   (:translator-expansion (raw-value-form type)
     (with-gensyms (raw-value)
       `(let ((,raw-value ,raw-value-form))
@@ -82,8 +100,11 @@
                     (type ,(lisp-type (rtype-type type)) ,value))
            ,(if (rtype-voidable-p type)
               `(when (&? ,ref)
-                 (free-value ,ref ,value ,(rtype-type type)))
-              `(free-value ,ref ,value ,(rtype-type type)))))))
+                 ,(expand-clean-value ref value (rtype-type type))
+                 ,(expand-free-value ref (rtype-type type)))
+              `(progn
+                 ,(expand-clean-value ref value (rtype-type type))
+                ,(expand-free-value ref (rtype-type type))))))))
   (:dynamic-extent-expansion (var value-var body type)
     (let ((expansion
             (expand-reference-dynamic-extent
@@ -165,29 +186,33 @@
                 (expand-reference-dynamic-extent
                   var size-var value-var body mode (parse-typespec type))
                 (with-gensyms (type-var pointer-var)
-                  `(let ((,type-var (parse-typespec ,type)))
-                     (with-foreign-pointer (,pointer-var (compute-size ,value-var ,type-var)
-                                                         ,size-var)
-                       (let ((,var ,pointer-var))
-                         (declare (type pointer ,var))
-                         (unwind-protect
-                             ,(case mode
-                                (:in `(progn
-                                        (write-value ,value-var ,pointer-var ,type-var)
-                                        ,@body))
-                                (:out `(prog1
-                                        (progn ,@body)
-                                        (setf ,value-var
-                                              (read-value
-                                                ,pointer-var ,value-var ,type-var))))
-                                (:inout `(progn (write-value
-                                                  ,value-var ,pointer-var ,type-var)
-                                                (prog1
-                                                 (progn ,@body)
-                                                 (setf ,value-var
-                                                       (read-value
-                                                         ,pointer-var ,value-var ,type-var))))))
-                           (cleanup-value ,pointer-var ,value-var ,type-var)))))))))
+                  `(let* ((,type-var (parse-typespec ,type))
+                          (,size-var (compute-size ,value-var ,type-var))
+                          (,pointer-var (allocate-value ,value-var ,type-var))
+                          (,var ,pointer-var))
+                     (declare (type pointer ,var ,pointer-var)
+                              (type non-negative-fixnum ,size-var)
+                              (ignorable ,size-var))
+                     (unwind-protect
+                         ,(case mode
+                            (:in `(progn
+                                    (write-value ,value-var ,pointer-var ,type-var)
+                                    ,@body))
+                            (:out `(prog1
+                                    (progn ,@body)
+                                    (setf ,value-var
+                                          (read-value
+                                            ,pointer-var ,value-var ,type-var))))
+                            (:inout `(progn (write-value
+                                              ,value-var ,pointer-var ,type-var)
+                                            (prog1
+                                             (progn ,@body)
+                                             (setf ,value-var
+                                                   (read-value
+                                                     ,pointer-var ,value-var ,type-var))))))
+                       (progn                             
+                         (clean-value ,pointer-var ,value-var ,type-var)
+                         (free-value ,pointer-var ,type-var))))))))
         (if voidable
           `(if (voidp ,value-var)
              (let ((,var &0)

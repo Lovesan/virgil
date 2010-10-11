@@ -4,8 +4,6 @@ ALIGNED ALLOCATION/REFERENCE-DYNAMIC-EXTENT
     can, for example, write
     (defalias ma16 () '(aligned 16 (array float (4 4))))
     and then, values of ma16 will be allocated on 16-byte boundaries.
-    This probably will require making ALLOCATE-VALUE
-    a generic function(and FREE-VALUE too).
 
 UNIONS OF IMMEDIATE/PRIMITIVE TYPES
     At the moment all unions are aggregate types. It means that even when

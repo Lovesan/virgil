@@ -45,7 +45,7 @@
   (declare (type pointer pointer))
   (pointer-address pointer))
 
-(declaim inline &=)
+(declaim (inline &=))
 (defun &= (pointer1 pointer2)
   (declare (type pointer pointer1 pointer2))
   (pointer-eq pointer1 pointer2))

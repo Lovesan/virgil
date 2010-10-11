@@ -158,17 +158,13 @@
   (:method (raw-value type)
     `(translate-value ,raw-value (parse-typespec ',(unparse-type type))))
   (:method (raw-value (type primitive-type))
-    raw-value)
-  (:method (raw-value (type immediate-type))
-    (expand-translate-value raw-value (base-type type))))
+    raw-value))
 
 (defgeneric expand-convert-value (lisp-value type)
   (:method (lisp-value type)
     `(convert-value ,lisp-value (parse-typespec ',(unparse-type type))))
   (:method (lisp-value (type primitive-type))
-    lisp-value)
-  (:method (lisp-value (type immediate-type))
-    (expand-convert-value lisp-value (base-type type))))
+    lisp-value))
 
 (defgeneric expand-read-value (pointer out type)
   (:method (pointer out type)
@@ -202,47 +198,40 @@
        (declare (type ,(lisp-type type) ,var))
        ,@body)))
 
-(defun allocate-value (value type)
-  (let ((pointer (foreign-alloc :uint8 :count (compute-size value type))))
-    (declare (type pointer pointer))
-    (write-value value pointer type)
-    pointer))
+(defgeneric allocate-value (value type)
+  (:method (value type)
+    (foreign-alloc :uint8 :count (compute-size value type)))
+  (:method (value (type primitive-type))
+    (foreign-alloc (primitive-type-cffi-type type))))
 
-(define-compiler-macro allocate-value (&whole form value type)
-  (if (constantp type)
-    (let ((type (eval type)))
-      (with-gensyms (pointer)
-        (once-only (value)
-          `(let ((,pointer
-                   (foreign-alloc :uint8 :count ,(expand-compute-size value type))))
-             (declare (type pointer ,pointer))
-             ,(expand-write-value value pointer type)
-             ,pointer))))
-    form))
+(defgeneric expand-allocate-value (value-form type)
+  (:method (value-form type)
+    `(allocate-value ,value-form
+                     (parse-typespec ',(unparse-type type))))
+  (:method (value-form (type primitive-type))
+    `(foreign-alloc ',(primitive-type-cffi-type type))))
 
-(defgeneric cleanup-value (pointer value type)
+(defgeneric clean-value (pointer value type)
   (:method (pointer value type)
     nil))
 
-(defgeneric expand-cleanup-value (pointer value type)
+(defgeneric expand-clean-value (pointer value type)
   (:method (pointer value (type primitive-type))
     nil)
-  (:method (pointer value (type immediate-type))
-    nil)
   (:method (pointer value type)
-   `(cleanup-value ,pointer ,value ,type)))
+   `(clean-value ,pointer ,value ,type)))
 
-(defun free-value (pointer value type)
-  (cleanup-value pointer value type)
-  (foreign-free pointer))
+(defgeneric free-value (pointer type)
+  (:method (pointer type)
+    (foreign-free pointer)
+    nil))
 
-(define-compiler-macro free-value (&whole form pointer value type)
-  (if (constantp type)
-    (once-only (pointer)
-      `(locally (declare (type pointer ,pointer))
-         ,(expand-cleanup-value pointer value type)
-         (foreign-free ,pointer)))
-    form))
+(defgeneric expand-free-value (pointer-form type)
+  (:method (pointer-form type)
+    `(free-value ,pointer-form (parse-typespec ',(unparse-type type))))
+  (:method (pointer-form (type primitive-type))
+    `(foreign-free ,pointer-form)
+    nil))
 
 (defmacro %unwind-protect (form &rest cleanup-forms)
   (if (find (complement #'constantp) cleanup-forms)
@@ -272,12 +261,76 @@
                                  (setf ,value-var
                                        ,(expand-read-value
                                           pointer-var value-var type))))))
-             ,(expand-cleanup-value pointer-var value-var type)))))))
+             (progn               
+               ,(expand-clean-value pointer-var value-var type))))))))
 
 (defun eval-if-constantp (x)
   (if (constantp x)
     (values (eval x) T)
     (values x nil)))
+
+(defun alloc (type &optional (value nil value-p))
+  (let* ((type (parse-typespec type))
+         (value (if value-p value (prototype type)))
+         (pointer (allocate-value value type)))
+    (declare (type pointer pointer))
+    (write-value value pointer type)
+    pointer))
+
+(define-compiler-macro alloc (&whole form type-form
+                              &optional (value-form nil value-p))
+  (multiple-value-bind
+      (type-form constantp) (eval-if-constantp type-form)
+    (if constantp
+      (let ((type (parse-typespec type-form)))
+        (with-gensyms (value pointer)
+          `(let* ((,value ,(if value-p
+                             value-form
+                             (expand-prototype type)))
+                  (,pointer ,(expand-allocate-value value type)))
+             (declare (type pointer ,pointer))
+             ,(expand-write-value value pointer type)
+             ,pointer)))
+      form)))
+
+(defun free (pointer type)
+  (declare (type pointer pointer))
+  (free-value pointer (parse-typespec type)))
+
+(define-compiler-macro free (&whole form pointer type)
+  (multiple-value-bind
+      (type constantp) (eval-if-constantp type)
+    (if constantp
+      (expand-free-value pointer (parse-typespec type))
+      form)))
+
+(defun clean (pointer value type)
+  (declare (type pointer pointer))
+  (clean-value pointer value (parse-typespec type)))
+
+(define-compiler-macro clean (&whole form pointer value type)
+  (multiple-value-bind
+      (type constantp) (eval-if-constantp type)
+    (if constantp
+      (expand-clean-value pointer value (parse-typespec type))
+      form)))
+
+(defun clean-and-free (pointer value type)
+  (declare (type pointer pointer))
+  (let ((type (parse-typespec type)))
+    (clean-value pointer value type)
+    (free-value pointer type)))
+
+(define-compiler-macro clean-and-free (&whole form pointer value type)
+  (multiple-value-bind
+      (type constantp) (eval-if-constantp type)
+    (if constantp
+      (once-only (pointer)
+        (let ((type (parse-typespec type)))
+          `(progn
+             ,(expand-clean-value pointer value type)
+             ,(expand-free-value pointer type))))
+      form)))
 
 (defun sizeof (type &optional (value nil value-p))
   (if value-p

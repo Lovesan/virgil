@@ -1,3 +1,25 @@
+v0.1.4
+    * CLEANUP-VALUE and EXPAND-CLEANUP-VALUE are renamed to
+        CLEAN-VALUE and EXPAND-CLEAN-VALUE
+    * ALLOCATE-VALUE and FREE-VALUE are now generic functions
+        ** ALLOCATE-VALUE allocates memory for value of specified type
+            (but does not write the contents of the supplied value into it)
+        ** FREE-VALUE frees allocated memory
+            (but does NO CLEANUP! Use CLEAN-VALUE first)
+        ** There are also EXPAND-ALLOCATE-VALUE and EXPAND-FREE-VALUE
+    * new features: ALLOC, CLEAN, FREE and CLEAN-AND-FREE functions
+        ** ALLOC allocates memory and writes contents of supplied value
+            into it (if the value is supplied. Otherwise it writes contents
+            of type's PROTOTYPE)
+        ** CLEAN does memory cleanup for the specified type
+            (frees internal pointers in structures, for expample)
+            but does not free supplied pointer. It requires lisp-level value
+            of that type to be supplied because memory blocks
+            allocated for that type may be of(non-fixed) size that
+            depends on that value.
+        ** FREE frees memory allocated to specified type
+        ** CLEAN-AND-FREE does exactly what you think.
+
 v0.1.3
     * Updated TODO
     * new features: New pointer arithmetic functions:
