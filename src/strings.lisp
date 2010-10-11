@@ -240,7 +240,7 @@
                   (dotimes (i nt-len)
                     (setf (deref pointer 'uint8 (+ bom-len data-len i)) 0)))
                 pointer)
-            (error (e) (foreign-free pointer) (error e))))))))
+            (error (e) (foreign-free (the pointer pointer)) (error e))))))))
 
 (define-aggregate-type string-type ()
   ((encoding :initform :encoding

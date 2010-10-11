@@ -46,7 +46,8 @@
   name
   cffi-type
   lisp-type
-  prototype)
+  prototype
+  prototype-expansion)
 
 (defclass immediate-type ()
   ((base-type :initarg :base-type
@@ -108,7 +109,7 @@
 
 (defgeneric expand-prototype (type)
   (:method ((type primitive-type))
-    (primitive-type-prototype type))
+    (primitive-type-prototype-expansion type))
   (:method (type)
     `(prototype (parse-typespec ',(unparse-type type)))))
 
@@ -223,6 +224,7 @@
 
 (defgeneric free-value (pointer type)
   (:method (pointer type)
+    (declare (type foreign-pointer pointer))
     (foreign-free pointer)
     nil))
 
@@ -230,8 +232,9 @@
   (:method (pointer-form type)
     `(free-value ,pointer-form (parse-typespec ',(unparse-type type))))
   (:method (pointer-form (type primitive-type))
-    `(foreign-free ,pointer-form)
-    nil))
+    `(progn 
+       (foreign-free (the foreign-pointer ,pointer-form))
+       nil)))
 
 (defmacro %unwind-protect (form &rest cleanup-forms)
   (if (find (complement #'constantp) cleanup-forms)

@@ -1,3 +1,13 @@
+v0.1.5
+    * bug fix: Primitive types' EXPAND-PROTOTYPE could result in value
+        that lisp compilers are unable to dump into fasls
+    * bug fix: Primitive types' EXPAND-FREE-VALUE always returned NIL
+    * bug fix: Invalid initarg to named enum type's constructor
+    * bug fix: Some lisp implementations (e.g. clisp) doesn't allow
+        function names to be symbols w/o package (well, not exactly
+        disallow, but in this case that functions names and hence functions
+        are simply lost after the compilation stage)
+
 v0.1.4
     * CLEANUP-VALUE and EXPAND-CLEANUP-VALUE are renamed to
         CLEAN-VALUE and EXPAND-CLEAN-VALUE

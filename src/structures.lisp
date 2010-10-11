@@ -383,7 +383,11 @@
 (defmacro define-struct (name-and-options &rest slots)
   (let* ((name-and-options (ensure-list name-and-options))
          (name (first name-and-options))
-         (ctor-name (gensym "CONSTRUCTOR")))
+         (ctor-name (intern (format nil "%~a::~a-PRIVATE-CONSTRUCTOR-~a"
+                                    (package-name (symbol-package name))
+                                    name
+                                    (gensym))
+                            :virgil)))
     (assert (and (symbolp name)
                  (not (constantp name)))
         (name))
@@ -591,7 +595,11 @@
 (defmacro define-union (name-and-options &rest slots)
   (let* ((name-and-options (ensure-list name-and-options))
          (name (first name-and-options))
-         (ctor-name (gensym "CONSTRUCTOR")))
+         (ctor-name (intern (format nil "%~a::~a-PRIVATE-CONSTRUCTOR-~a"
+                                    (package-name (symbol-package name))
+                                    name
+                                    (gensym))
+                            :virgil)))
     (assert (and (symbolp name)
                  (not (constantp name)))
         (name))

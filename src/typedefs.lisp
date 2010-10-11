@@ -46,7 +46,8 @@
              :name ',name
            :cffi-type ',cffi-type
            :lisp-type ',lisp-type
-           :prototype ,prototype))
+           :prototype ,prototype
+           :prototype-expansion ',prototype))
        (deftype ,name () ',lisp-type))))
 
 (defmacro %type-method (method-name form type-name-var (&rest args))

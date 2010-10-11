@@ -134,7 +134,7 @@
            (setf (gethash ',name *enum-type-hash*)
                  (make-instance 'named-enum-type
                    :base-type (parse-typespec ',base-type)
-                   :enum-name ',name
+                   :name ',name
                    :kv ',kv
                    :vk ',vk))
            (define-type-parser ,name ()
