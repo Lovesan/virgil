@@ -115,7 +115,11 @@
              :collect (expand-clean-value
                         `(& ,pointer ,offset)
                         `(gethash ',name ,value)
-                        slot-type))))))
+                        slot-type)))))
+  (:allocator-expansion (value type)
+   `(foreign-alloc :uint8 :count ,(compute-fixed-size type)))
+  (:deallocator-expansion (pointer type)
+   `(foreign-free ,pointer)))
 
 (defun offsetof (type slot-name)
   (declare (type symbol slot-name))

@@ -1,3 +1,14 @@
+v0.1.6
+    * new feature: new options in DEFINE-IMMEDIATE-TYPE and
+        DEFINE-AGGREGATE-TYPE macros. Like most other options, they are just
+        shortcuts for defining methods of appropriate generic functions.
+        ** :ALLOCATOR defines method of ALLOCATE-VALUE
+        ** :DEALLOCATOR - FREE-VALUE
+        ** :ALLOCATOR-EXPANSION - EXPAND-ALLOCATE-VALUE
+        ** :DEALLOCATOR-EXPANSION - EXPAND-FREE-VALUE
+    * optimization: EXPAND-ALLOCATE-VALUE and EXPAND-FREE-VALUE have been
+        specialized on built-in types
+
 v0.1.5
     * bug fix: Primitive types' EXPAND-PROTOTYPE could result in value
         that lisp compilers are unable to dump into fasls

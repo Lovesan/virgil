@@ -251,14 +251,14 @@
         (data-len bom-len nt-len)
         (cstring-size value :encoding (strtype-encoding type))
       (declare (type non-negative-fixnum data-len bom-len nt-len))
-      (+ data-len bom-len nt-len)))
+      (the size-t (+ data-len bom-len nt-len))))
   (:size-expansion (value-form type)
     (with-gensyms (data-len bom-len nt-len)
       `(multiple-value-bind
            (,data-len ,bom-len ,nt-len)
            (cstring-size ,value-form :encoding ,(strtype-encoding type))
          (declare (type non-negative-fixnum ,data-len ,bom-len ,nt-len))
-         (+ ,data-len ,bom-len ,nt-len))))
+         (the size-t (+ ,data-len ,bom-len ,nt-len)))))
   (:align (type)
     ;;this should be enough for x86 platform
     (length (enc-nul-encoding
@@ -277,7 +277,11 @@
   (:writer-expansion (value-form pointer-form type)
     `(write-cstring ,value-form ,pointer-form
                     :encoding ,(strtype-encoding type)))
-  (:cleaner-expansion (pointer-form value-form type) nil))
+  (:allocator-expansion (value type)
+    `(foreign-alloc :uint8 :count ,(expand-compute-size value type)))
+  (:cleaner-expansion (pointer-form value-form type) nil)
+  (:deallocator-expansion (pointer type)
+    `(foreign-free ,pointer)))
 
 (define-aggregate-type static-string-type (string-type)
   ((byte-length :initarg :byte-length
@@ -307,7 +311,9 @@
                    :byte-length ,(strtype-byte-length type)))
   (:writer (value pointer type)
     `(write-cstring ,value ,pointer :encoding ,(strtype-encoding type)
-                    :byte-length ,(strtype-byte-length type))))
+                    :byte-length ,(strtype-byte-length type)))
+  (:allocator-expansion (value type)
+    `(foreign-alloc :uint8 :count ,(compute-fixed-size type))))
 
 (define-type-parser string (&key (encoding :ascii) byte-length)
   (check-type encoding keyword)

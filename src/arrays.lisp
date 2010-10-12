@@ -44,7 +44,11 @@
   (:align (type)
     (compute-alignment (st-elt-type type)))
   (:lisp-type (type)
-    (or (st-lisp-type type) 'sequence)))
+    (or (st-lisp-type type) 'sequence))
+  (:allocator-expansion (value type)
+    `(foreign-alloc :uint8 :count ,(expand-compute-size value type)))
+  (:deallocator-expansion (pointer type)
+    `(foreign-free ,pointer)))
 
 (define-aggregate-type static-sequence-type (sequence-type)
   ((length :initarg :length 
@@ -310,7 +314,11 @@
     (make-array '() :element-type (lisp-type (at-elt-type type))))
   (:prototype-expansion (type)
     `(make-array '() :element-type ',(lisp-type (at-elt-type type))))
-  (:align (type) (compute-alignment (at-elt-type type))))
+  (:align (type) (compute-alignment (at-elt-type type)))
+  (:allocator-expansion (value type)
+    `(foreign-alloc :uint8 :count ,(expand-compute-size value type)))
+  (:deallocator (pointer type)
+    `(foreign-free ,pointer)))
 
 (define-aggregate-type static-array-type (array-type)
   ((dimensions :initarg :dimensions :initform '()

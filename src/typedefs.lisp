@@ -73,6 +73,10 @@
        (simple-parser nil simple-parser-p)
        (cleaner nil cleaner-p)
        (cleaner-expansion nil cleaner-expansion-p)
+       (allocator nil allocator-p)
+       (allocator-expansion nil allocator-expansion-p)
+       (deallocator nil deallocator-p)
+       (deallocator-expansion nil deallocator-expansion-p)
        (dynamic-extent-expansion nil dynamic-extent-expansion-p)
        (callback-dynamic-extent-expansion nil callback-dx-p))
       (flatten-options options)
@@ -115,6 +119,18 @@
        ,(when cleaner-expansion-p
           (%type-method expand-clean-value cleaner-expansion name
                         (pointer-form-var value-form-var type-var)))
+       ,(when allocator-p
+          (%type-method allocate-value allocator name
+                        (value-var type-var)))
+       ,(when allocator-expansion-p
+          (%type-method expand-allocate-value allocator-expansion name
+                        (value-form-var type-var)))
+       ,(when deallocator-p
+          (%type-method free-value deallocator name
+                        (pointer-var type-var)))
+       ,(when deallocator-expansion-p
+          (%type-method expand-free-value deallocator-expansion name
+                        (pointer-form-var type-var)))
        ,(when dynamic-extent-expansion-p
           (%type-method expand-dynamic-extent dynamic-extent-expansion name
                         (var-var value-var body-var type-var)))
@@ -143,7 +159,11 @@
        (reader-expansion nil reader-expansion-p)
        (writer-expansion nil writer-expansion-p)
        (cleaner-expansion nil cleaner-expansion-p)
-       (reference-dynamic-extent-expansion nil rdx-p))
+       (reference-dynamic-extent-expansion nil rdx-p)
+       (allocator nil allocator-p)
+       (allocator-expansion nil allocator-expansion-p)
+       (deallocator nil deallocator-p)
+       (deallocator-expansion nil deallocator-expansion-p))
       (flatten-options options)
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (defclass ,name (,@superclasses aggregate-type)
@@ -210,6 +230,18 @@
                         name
                         (var-var size-var-var value-form-var
                                  body-form-var mode-var type-var)))
+       ,(when allocator-p
+          (%type-method allocate-value allocator name
+                        (value-var type-var)))
+       ,(when allocator-expansion-p
+          (%type-method expand-allocate-value allocator-expansion name
+                        (value-form-var type-var)))
+       ,(when deallocator-p
+          (%type-method free-value deallocator name
+                        (pointer-var type-var)))
+       ,(when deallocator-expansion-p
+          (%type-method expand-free-value deallocator-expansion name
+                        (pointer-form-var type-var)))       
        ',name)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)

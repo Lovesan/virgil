@@ -92,6 +92,8 @@
                ,(expand-read-value raw-value nil (rtype-type type))
                void)
             (expand-read-value raw-value nil (rtype-type type))))))
+  (:allocator-expansion (value type)
+    `(foreign-alloc :uint8 :count ,(compute-fixed-size type)))
   (:cleaner-expansion (pointer value type)
     (with-gensyms (ref)
       (once-only (value)
@@ -105,6 +107,8 @@
               `(progn
                  ,(expand-clean-value ref value (rtype-type type))
                 ,(expand-free-value ref (rtype-type type))))))))
+  (:deallocator-expansion (pointer type)
+    `(foreign-free ,pointer))
   (:dynamic-extent-expansion (var value-var body type)
     (let ((expansion
             (expand-reference-dynamic-extent
