@@ -54,8 +54,14 @@
               :initform (parse-typespec 'int)
               :reader base-type)))
 
+(defun immediate-type-p (type)
+  (typep type 'immediate-type))
+
 (defclass aggregate-type ()
   ())
+
+(defun aggregate-type-p (type)
+  (typep type 'aggregate-type))
 
 (defgeneric unparse-type (type)
   (:method ((type primitive-type))
@@ -97,6 +103,16 @@
   (:method (type)
     (error "Unable to compute alignment of type ~s"
            (unparse-type type))))
+
+(defgeneric compute-slot-offset (slot type)
+  (:method (slot type)
+    (error "Unable to compute offset of slot ~s for type ~s"
+           slot (unparse-type type))))
+
+(defgeneric expand-compute-slot-offset (slot type)
+  (:method (slot-form type)
+    `(compute-slot-offset ,slot-form
+                          (parse-typespec ',(unparse-type type)))))
 
 (defgeneric prototype (type)
   (:method ((type primitive-type))
@@ -358,6 +374,16 @@
     (if constantp
       (compute-alignment (parse-typespec type))
       `(compute-alignment (parse-typespec ,type)))))
+
+(defun offsetof (type member)
+  (compute-slot-offset member (parse-typespec type)))
+
+(define-compiler-macro offsetof (type member)
+  (multiple-value-bind
+      (type constantp) (eval-if-constantp type)
+    (if constantp
+      (expand-compute-slot-offset member (parse-typespec type))
+      `(compute-slot-offset ,member (parse-typespec ,type)))))
 
 (defun convert (lisp-value type)
   (convert-value lisp-value (parse-typespec type)))

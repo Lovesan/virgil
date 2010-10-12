@@ -119,50 +119,38 @@
   (:allocator-expansion (value type)
    `(foreign-alloc :uint8 :count ,(compute-fixed-size type)))
   (:deallocator-expansion (pointer type)
-   `(foreign-free ,pointer)))
-
-(defun offsetof (type slot-name)
-  (declare (type symbol slot-name))
-  (let ((type (parse-typespec type)))
-    (unless (typep type 'struct-type)
-      (error "~s is not a structure type"
-             (unparse-type type)))
-    (loop :for (name slot-type offset) :in (struct-slots type)
-      :when (eq name slot-name) :do (return offset)
+   `(foreign-free ,pointer))
+  (:slot-offset (member-name type)
+    (check-type member-name symbol)
+    (loop :for (slot-name slot-type slot-offset)
+      :in (struct-slots type)
+      :when (eq slot-name member-name) :do (return slot-offset)
       :finally (error "Structure type ~s has no slot named ~s"
                       (unparse-type type)
-                      slot-name))))
-
-(define-compiler-macro offsetof (&whole form type slot-name)
-  (multiple-value-bind
-      (type constantp)
-      (eval-if-constantp type)
-    (if constantp
-      (let ((type (parse-typespec type)))
-        (unless (typep type 'struct-type)
-          (error "~s is not a structure type"
-                 (unparse-type type)))
-        (multiple-value-bind
-            (slot-name constantp) (eval-if-constantp slot-name)
-          (if constantp
-            (let ((slot (progn
-                          (check-type slot-name symbol)
-                          (find slot-name (struct-slots type)
-                                :key #'first :test #'eq))))
-              (if (null slot)
-                (error "Structure type ~s has no slot named ~s"
-                       slot-name (unparse-type type))
-                (third slot)))
-            (once-only (slot-name)
-              `(progn
-                 (check-type ,slot-name symbol)
-                 (case ,slot-name
-                   ,@(loop :for (name slot-type offset) :in (struct-slots type)     
-                       :collect `(,name ,offset))
-                   (T (error "Structure type ~s has no slot named ~s"
-                             ',(unparse-type type)
-                             ,slot-name))))))))
-      form)))
+                      member-name)))
+  (:slot-offset-expansion (member-name type)
+    (multiple-value-bind
+        (member-name constantp) (eval-if-constantp member-name)
+      (if constantp
+        (let ((slot (progn
+                      (check-type member-name symbol)
+                      (find member-name (struct-slots type)
+                            :key #'first :test #'eq))))
+          (if (null slot)          
+            (error "Structure type ~s has no slot named ~s"
+                   (unparse-type type)
+                   member-name)
+            (third slot)))
+        (once-only (member-name)
+          `(progn
+             (check-type ,member-name symbol)
+             (case ,member-name
+               ,@(loop :for (slot-name slot-type slot-offset)
+                   :in (struct-slots type)
+                   :collect `(,slot-name ,slot-offset))
+               (T (error "Structure type ~s has no slot named ~s"
+                         ',(unparse-type type)
+                         ,member-name)))))))))
 
 (define-aggregate-type named-struct-type (struct-type)
   ((name :initform nil
@@ -274,10 +262,6 @@
                         `(&+ ,pointer ,offset)
                         `(,accessor ,value)
                         slot-type))))))
-
-(defun align-offset (offset align)
-  (+ offset (mod (- align (mod offset align))
-                 align)))
 
 (defun parse-struct-slots (included slots named align-supplied packed)
   (loop :with current-offset = (if included

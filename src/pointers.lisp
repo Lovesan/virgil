@@ -118,3 +118,15 @@
                           (parse-typespec type))
       `(write-value ,value (&+ ,pointer ,offset)
                     (parse-typespec ,type)))))
+
+(declaim (inline align-offset))
+(defun align-offset (offset align)
+  (declare (type size-t offset align))
+  (multiple-value-bind
+      (q r) (floor offset align)
+    (declare (ignore q) (type size-t r))
+    (if (zerop r)
+      offset
+      (let* ((padding (the size-t (- align r)))
+             (new-offset (the size-t (+ offset padding))))
+        new-offset))))

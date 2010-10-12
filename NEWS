@@ -1,3 +1,28 @@
+v0.2.0
+    * new feature: Proxy types. Can be defined with DEFINE-PROXY-TYPE.
+        Proxy types behave just the same as their proxied types,
+        until you specialize one of the core generics on them.
+        Proxied type of proxy type can be obtained by PROXIED-TYPE function.
+        MAKE-INSTANCE's initarg for proxied type of proxy type is :TYPE
+    * new feature: Type predicates.
+        ** PRIMITIVE-TYPE-P
+        ** IMMEDIATE-TYPE-P
+        ** AGGREGATE-TYPE-P
+        ** PROXY-TYPE-P
+    * new feature: New core generics.
+        ** COMPUTE-SLOT-OFFSET computes the offset of aggregate type's slot.
+            For now it is specialized only on structure types, but this may
+            change in the future.
+        ** EXPAND-COMPUTE-SLOT-OFFSET is compile-time analogue of
+            COMPUTE-SLOT-OFFSET and can be specialized
+            for optimization purposes
+    * enchancement: OFFSETOF and it's compiler macro now rely on
+        COMPUTE-SLOT-OFFSET and EXPAND-COMPUTE-SLOT-OFFSET
+    * new feature: Strictly aligned types. This kind of types can be
+        represented by ALIGNED typespec. Syntax: (ALIGNED alignment type)
+        Values of strictly aligned types are always allocated on
+        boundaries that comply certain alignment.
+
 v0.1.6
     * new feature: new options in DEFINE-IMMEDIATE-TYPE and
         DEFINE-AGGREGATE-TYPE macros. Like most other options, they are just

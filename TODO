@@ -1,17 +1,10 @@
-ALIGNED ALLOCATION/REFERENCE-DYNAMIC-EXTENT
-    There should be the way to explicitly overwrite type alignment.
-    A new type, probably. And corresponding typespec. So that we
-    can, for example, write
-    (defalias ma16 () '(aligned 16 (array float (4 4))))
-    and then, values of ma16 will be allocated on 16-byte boundaries.
-
 UNIONS OF IMMEDIATE/PRIMITIVE TYPES
     At the moment all unions are aggregate types. It means that even when
     all types in union are non-aggregate types, we cannot pass them
     by value in function calls.
 
 BY-VALUE PASSAGE OF AGGREGATE TYPE FUNCTION PARAMETERS
-    Well, this is obvious that most CL implementation do not allow
+    Well, this is obvious that most CL implementations do not allow
     aggregate types(structs etc.) to be passed by value. However, we can
     simulate this by converting values of fixed size into raw bytes
     and then passing that bytes as parameters. Not sure what to do with

@@ -25,7 +25,7 @@
 (in-package :cl-user)
 
 (asdf:defsystem #:virgil
-  :version "0.1.6"
+  :version "0.2.0"
   :description "Virgil, a lisper's guide to the lower levels"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
@@ -38,6 +38,7 @@
             ((:file "package")
              (:file "features")
              (:file "base")
+             (:file "proxy") 
              (:file "typedefs")
              (:file "primitives")
              (:file "pointers")
@@ -46,6 +47,7 @@
              (:file "strings")
              (:file "enums")
              (:file "structures")
-             (:file "functions")))))
+             (:file "functions")                                      
+             (:file "aligned")))))
 
 ;; vim: ft=lisp et

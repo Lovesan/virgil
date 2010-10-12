@@ -40,6 +40,8 @@
     #:expand-compute-size
     #:compute-fixed-size
     #:compute-alignment
+    #:compute-slot-offset
+    #:expand-compute-slot-offset
     #:translate-value
     #:convert-value
     #:read-value
@@ -61,6 +63,7 @@
     ;;user-level analogues
     #:sizeof
     #:alignof
+    #:offsetof
     #:convert
     #:translate
     #:alloc
@@ -68,12 +71,22 @@
     #:clean
     #:clean-and-free
     
+    ;;proxy type stuff
+    #:proxied-type
+    
     ;;define new types with this
     #:define-type-parser
     #:defalias
     #:define-primitive-type
     #:define-immediate-type
     #:define-aggregate-type
+    #:define-proxy-type
+    
+    ;;type predicates
+    #:primitive-type-p
+    #:immediate-type-p
+    #:aggregate-type-p
+    #:proxy-type-p
     
     ;;primitive types
     #:char-t
@@ -164,6 +177,9 @@
     #:translate-name
     #:define-external-function
     #:define-callback
+        
+    ;;aligned type
+    #:aligned
     
     ;;also export CFFI's stuff
     #:callback
