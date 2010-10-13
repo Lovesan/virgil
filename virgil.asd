@@ -22,8 +22,6 @@
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;;; DEALINGS IN THE SOFTWARE.
 
-(in-package :cl-user)
-
 (asdf:defsystem #:virgil
   :version "0.2.0"
   :description "Virgil, a lisper's guide to the lower levels"
