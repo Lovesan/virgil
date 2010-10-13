@@ -113,3 +113,7 @@
       (make-instance 'aligned-aggregate-type
         :type type
         :align align))))
+
+(defmethod unparse-type ((type aligned-type))
+  `(aligned ,(aligned-type-align type)
+            ,(unparse-type (proxied-type type))))

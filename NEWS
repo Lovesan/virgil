@@ -1,3 +1,6 @@
+v0.2.1
+    * bug fix: specialized UNPARSE-TYPE on strictly aligned types
+
 v0.2.0
     * new feature: Proxy types. Can be defined with DEFINE-PROXY-TYPE.
         Proxy types behave just the same as their proxied types,
