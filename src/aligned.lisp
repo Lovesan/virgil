@@ -24,6 +24,9 @@
 
 (in-package #:virgil)
 
+(defun align-exp2-p (align)
+  (zerop (logand align (1- align))))
+
 (define-proxy-type aligned-type ()
   ((align :initform 1
           :initarg :align
@@ -36,9 +39,12 @@
            (padding (+ (sizeof '*) (1- align)))
            (pointer (foreign-alloc
                       :uint8 :count (+ padding size)))
-           (aligned-pointer (& (align-offset
-                                 (+ (sizeof '*) (&& pointer))
-                                 align))))
+           (aligned-pointer (if (align-exp2-p align)
+                              (logand (&& (&+ pointer (+ (sizeof '*) (1- align))))
+                                      (lognot (1- align)))
+                              (& (align-offset
+                                   (&& (&+ pointer (sizeof '*)))
+                                   align)))))
       (setf (deref aligned-pointer '* (- (sizeof '*)))
             pointer)
       aligned-pointer))
@@ -51,9 +57,14 @@
                 (,size (the size-t ,(expand-compute-size value atype)))
                 (,pointer (foreign-alloc
                             :uint8 :count (+ ,padding ,size)))
-                (,aligned-pointer (& (align-offset
-                                       (+ ,(sizeof '*) (&& ,pointer))
-                                       ,align))))
+                (,aligned-pointer ,(if (align-exp2-p align)
+                                     `(& (logand
+                                           (the size-t (&& (&+ ,pointer ,(+ (sizeof '*)
+                                                                            (1- align)))))
+                                           ,(lognot (1- align))))
+                                     `(& (align-offset
+                                           (&& (&+ ,pointer ,(sizeof '*)))
+                                           ,align)))))
            (declare (ignorable ,value)
                     (type pointer ,pointer ,aligned-pointer))
            (setf (deref ,aligned-pointer '* (- ,(sizeof '*)))
@@ -74,9 +85,13 @@
                                            value-var
                                            atype)))
                                  ,size-var)
-           (let* ((,pointer-var (& (align-offset
-                                     (&& ,pointer-var)
-                                     ,align)))
+           (let* ((,pointer-var ,(if (align-exp2-p align)
+                                     `(& (logand
+                                           (the size-t (&& (&+ ,pointer-var ,(1- align))))
+                                           ,(lognot (1- align))))
+                                     `(& (align-offset
+                                           (&& ,pointer-var)
+                                           ,align))))
                   (,var ,pointer-var))
              (declare (type pointer ,pointer-var ,var)
                       (type ,(lisp-type atype) ,value-var))
