@@ -236,7 +236,8 @@
   (:method (pointer value (type primitive-type))
     nil)
   (:method (pointer value type)
-   `(clean-value ,pointer ,value ,type)))
+   `(clean-value ,pointer ,value (parse-typespec
+                                   ',(unparse-type type)))))
 
 (defgeneric free-value (pointer type)
   (:method (pointer type)

@@ -379,7 +379,7 @@
 (defun make-callback-body (arg-types body)
   (labels ((iter (arg-types)
              (if (null arg-types)
-               `(progn ,@body)
+               `(locally ,@body)
                (destructuring-bind
                    (type name cffi-type) (car arg-types)
                  (declare (ignore cffi-type))
