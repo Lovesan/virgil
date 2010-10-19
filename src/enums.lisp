@@ -93,13 +93,19 @@
           ((consp x)
            (destructuring-bind
                (k v &rest rest) x
-             (if (and (integerp v)
-                      (keywordp k)
-                      (null rest))
-               (progn (push (list k v) kv)
-                      (push (list v k) vk)
-                      (setf i v))
-               (error "Invalid enum value spec: ~s" x))))
+             (multiple-value-bind
+                 (v constantp) (eval-if-constantp v)
+               (unless constantp
+                 (error "Enum value is not a constant: ~s" x))
+               (unless (integerp v)
+                 (error "Enum value is not an integer: ~s" x))
+               (unless (keywordp k)
+                 (error "Enum key is not a keyword: ~s" x))
+               (if (null rest)
+                 (progn (push (list k v) kv)
+                        (push (list v k) vk)
+                        (setf i v))
+                 (error "Invalid enum value spec: ~s" x)))))
           (T (error "Invalid enum value spec: ~s" x)))
     :finally (return (values kv vk))))
 
@@ -132,6 +138,8 @@
         (&key (conc-name (intern (format nil "~a-" name)))
               (base-type 'int))
         (flatten-options options)
+      (when (null conc-name)
+        (setf conc-name ""))
       (multiple-value-bind
           (kv vk) (parse-enum-list enum-list)
         `(eval-when (:compile-toplevel :load-toplevel :execute)

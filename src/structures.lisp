@@ -392,6 +392,8 @@
          (print-function nil print-function-p))
         (flatten-options (rest name-and-options))
       (when align-p (assert (typep align 'non-negative-fixnum) (align)))
+      (when (null conc-name)
+        (setf conc-name ""))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          (notice-struct-definition
            ',name ',ctor-name ',conc-name ',(when include-p include)
@@ -603,6 +605,8 @@
          (print-function nil print-function-p))
         (flatten-options (rest name-and-options))
       (when align-p (assert (typep align 'non-negative-fixnum) (align)))
+      (when (null conc-name)
+        (setf conc-name ""))
       `(eval-when (:compile-toplevel :load-toplevel :execute)
          (notice-union-definition
            ',name ',ctor-name ',conc-name ',(when include-p include)
