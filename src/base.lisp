@@ -54,6 +54,9 @@
               :initform (parse-typespec 'int)
               :reader base-type)))
 
+(defmethod base-type ((type primitive-type))
+  type)
+
 (defun immediate-type-p (type)
   (typep type 'immediate-type))
 

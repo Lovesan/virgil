@@ -1,3 +1,13 @@
+v0.2.5
+    * new feature: FILTERED types. This is the new kind of proxy types.
+        Typespec syntax: (FILTERED type predicate handler) where 'predicate'
+        and 'handler' must be the names of one-argument functions.
+        Filtered types call their predicate just after translation/reading
+        of value or just before it's conversion/writing. Unless value
+        matches the predicate, filtered type's handler is applied to it
+    * improvement: BASE-TYPE has been specialized on primitive types:
+        It simply returns them as they are
+
 v0.2.4
     * improvement: :CONC-NAME option with value of NIL in named enums
         and structures is now treaten as empty conc-name

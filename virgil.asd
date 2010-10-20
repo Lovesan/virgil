@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:virgil
-  :version "0.2.4"
+  :version "0.2.5"
   :description "Virgil, a lisper's guide to the lower levels"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
@@ -46,6 +46,7 @@
              (:file "enums")
              (:file "structures")
              (:file "functions")                                      
-             (:file "aligned")))))
+             (:file "aligned")
+             (:file "filtered")))))
 
 ;; vim: ft=lisp et

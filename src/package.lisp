@@ -181,6 +181,9 @@
     ;;aligned type
     #:aligned
     
+    ;;filtered type
+    #:filtered
+    
     ;;also export CFFI's stuff
     #:callback
     #:get-callback
