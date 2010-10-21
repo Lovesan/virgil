@@ -204,6 +204,10 @@
 
 (define-constant void (%void) :test #'equalp)
 
+(defmethod make-load-form ((object void) &optional env)
+  (declare (ignore env))
+  'void)
+
 (define-immediate-type void-type ()
   ((base-type :initform (make-primitive-type
                           :name :void

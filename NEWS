@@ -1,5 +1,6 @@
 v0.2.6
     * :UNDERSCORE name translator was renamed to :SNAKE-CASE
+    * improvement: Specialized MAKE-LOAD-FORM on VOID
     * bug fix: Specialized EXPAND-REFERENCE-DYNAMIC-EXTENT on
         aggregate filtered types
 
