@@ -1,3 +1,6 @@
+BITFIELDS
+    Uhm... Ok, but who uses bitfields, anyway?
+
 RECURSIVE TYPES
     Particulary, reference types of structure slots. For now, it is not
     allowed for a slot type, even reference type, to be of
