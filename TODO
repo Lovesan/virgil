@@ -1,14 +1,15 @@
-UNIONS OF IMMEDIATE/PRIMITIVE TYPES
-    At the moment all unions are aggregate types. It means that even when
-    all types in union are non-aggregate types, we cannot pass them
-    by value in function calls.
+RECURSIVE TYPES
+    Particulary, reference types of structure slots. For now, it is not
+    allowed for a slot type, even reference type, to be of
+    structure type being defined, because EXPAND-* core generics, and
+    probably even their run-time analogues, will hang while operating on them.
 
 BY-VALUE PASSAGE OF AGGREGATE TYPE FUNCTION PARAMETERS
     Well, this is obvious that most CL implementations do not allow
     aggregate types(structs etc.) to be passed by value. However, we can
     simulate this by converting values of fixed size into raw bytes
     and then passing that bytes as parameters. Not sure what to do with
-    alignment stuff(see above) in this case.
+    alignment stuff in this case.
 
 EXAMPLES
     Some examples of library features.

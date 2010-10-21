@@ -1,3 +1,8 @@
+v0.3.0
+    * new feature: Immediate union types. When all types in union are
+        either primitive or immediate, union type also will be treated
+        as immediate type.
+
 v0.2.6
     * :UNDERSCORE name translator was renamed to :SNAKE-CASE
     * improvement: Specialized MAKE-LOAD-FORM on VOID

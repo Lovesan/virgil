@@ -507,6 +507,31 @@
 (define-aggregate-type named-union-type (union-type named-struct-type)
   ())
 
+(define-immediate-type immediate-union-type (union-type)
+  ()
+  (:converter (value type)
+    (with-foreign-pointer (p (compute-fixed-size (base-type type)))
+      (write-value value p type)
+      (read-value p nil (base-type type))))
+  (:converter-expansion (value type)
+    (with-gensyms (pointer)
+      `(with-foreign-pointer (,pointer ,(compute-fixed-size (base-type type)))
+         ,(expand-write-value value pointer type)
+         ,(expand-read-value pointer nil (base-type type)))))
+  (:translator (value type)
+    (with-foreign-pointer (p (compute-fixed-size (base-type type)))
+      (write-value value p (base-type type))
+      (read-value p nil type)))
+  (:translator-expansion (value type)
+    (with-gensyms (pointer)
+      `(with-foreign-pointer (,pointer ,(compute-fixed-size (base-type type)))
+         ,(expand-write-value value pointer (base-type type))
+         ,(expand-read-value pointer nil type)))))
+
+(define-immediate-type immediate-named-union-type
+    (immediate-union-type named-struct-type)
+  ())
+
 ;;Aargh!! Delicious copypasta!!
 (defun parse-union-slots (included slots named align-supplied)
   (loop :with total-size = (if included (struct-size-no-padding included) 0)
@@ -549,12 +574,27 @@
     (multiple-value-bind
         (slots size size-no-padding align)
         (parse-union-slots nil slots nil align)
-      (make-instance 'union-type
-        :slots slots
-        :size size
-        :size-no-padding size-no-padding
-        :align align))))
-
+      (if (every (lambda (spec &aux (type (second spec)))
+                   (or (immediate-type-p type)
+                       (primitive-type-p type)))
+                 slots)
+        (make-instance 'immediate-union-type
+          :slots slots
+          :size size
+          :size-no-padding size-no-padding
+          :align align
+          :base-type (loop :with max-type = (parse-typespec 'byte)
+                       :with max-size = 1
+                       :for (name type offs align size) :in slots
+                       :when (> size max-size) :do (setf max-size size
+                                                         max-type type)
+                       :finally (return max-type)))
+        (make-instance 'union-type
+          :slots slots
+          :size size
+          :size-no-padding size-no-padding
+          :align align)))))
+  
 (defmethod unparse-type ((type union-type))
   `(union (:align ,(struct-align type))
           ,@(loop :for (name slot-type offset align)
@@ -572,15 +612,34 @@
           (multiple-value-bind
               (slots size size-no-padding align)
               (parse-union-slots included slots name align)
-            (make-instance 'named-union-type
-              :name name
-              :ctor-name ctor-name
-              :conc-name conc-name
-              :size size
-              :include included
-              :size-no-padding size-no-padding
-              :align align
-              :slots slots)))))
+            (if (every (lambda (spec &aux (type (second spec)))
+                         (or (immediate-type-p type)
+                             (primitive-type-p type)))
+                       slots)
+              (make-instance 'immediate-named-union-type
+                :name name
+                :ctor-name ctor-name
+                :conc-name conc-name
+                :include included
+                :slots slots
+                :size size
+                :size-no-padding size-no-padding
+                :align align
+                :base-type (loop :with max-type = (parse-typespec 'byte)
+                             :with max-size = 1
+                             :for (name type offs align size) :in slots
+                             :when (> size max-size) :do (setf max-size size
+                                                               max-type type)
+                             :finally (return max-type)))
+              (make-instance 'named-union-type
+                :name name
+                :ctor-name ctor-name
+                :conc-name conc-name
+                :size size
+                :include included
+                :size-no-padding size-no-padding
+                :align align
+                :slots slots))))))
 
 (defmacro define-union (name-and-options &rest slots)
   (let* ((name-and-options (ensure-list name-and-options))

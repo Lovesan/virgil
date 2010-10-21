@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:virgil
-  :version "0.2.6"
+  :version "0.3.0"
   :description "Virgil, a lisper's guide to the lower levels"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
