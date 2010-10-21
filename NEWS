@@ -1,3 +1,8 @@
+v0.2.6
+    * :UNDERSCORE name translator was renamed to :SNAKE-CASE
+    * bug fix: Specialized EXPAND-REFERENCE-DYNAMIC-EXTENT on
+        aggregate filtered types
+
 v0.2.5
     * new feature: FILTERED types. This is the new kind of proxy types.
         Typespec syntax: (FILTERED type predicate handler) where 'predicate'

@@ -100,7 +100,39 @@
          (declare (type ,(lisp-type type) ,value))
          (if (funcall #',(filtered-type-predicate type) ,value)
            ,value
-           (funcall #',(filtered-type-handler type) ,value))))))
+           (funcall #',(filtered-type-handler type) ,value)))))
+  (:reference-dynamic-extent-expansion
+    (var size-var value-var body mode type)
+    (with-gensyms (value)
+      (ecase mode
+        (:in `(let ((,value ,value-var))
+                (declare (type ,(lisp-type type) ,value))
+                (unless (funcall #',(filtered-type-predicate type) ,value)
+                  (setf ,value (funcall #',(filtered-type-handler type)
+                                        ,value)))
+                ,(expand-reference-dynamic-extent
+                   var size-var value body mode (proxied-type type))))
+        (:out `(let ((,value ,value-var))
+                 (declare (type ,(lisp-type type) ,value))
+                 (prog1
+                  ,(expand-reference-dynamic-extent
+                     var size-var value body mode (proxied-type type))
+                  (if (funcall #',(filtered-type-predicate type) ,value)
+                    (setf ,value (funcall #',(filtered-type-handler type)
+                                          ,value)))
+                  (setf ,value-var ,value))))
+        (:inout `(let ((,value ,value-var))
+                   (declare (type ,(lisp-type type) ,value))
+                   (unless (funcall #',(filtered-type-predicate type) ,value)
+                     (setf ,value (funcall #',(filtered-type-handler type)
+                                           ,value)))
+                   (prog1
+                    ,(expand-reference-dynamic-extent
+                       var size-var value body mode (proxied-type type))
+                    (unless (funcall #',(filtered-type-predicate type) ,value)
+                      (setf ,value (funcall #',(filtered-type-handler type)
+                                            ,value)))
+                    (setf ,value-var ,value))))))))
 
 (defun valid-function-name-p (name)
   (or (symbolp name)

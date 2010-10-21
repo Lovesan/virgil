@@ -245,7 +245,7 @@
       (intern (with-output-to-string (out)
                 (loop :for c :across (the string name)
                   :do (write-char-with-case c out case))))))
-  (:method (name (type (eql :underscore)) &rest args)
+  (:method (name (type (eql :snake-case)) &rest args)
     (destructuring-bind
         (&optional (case (readtable-case *readtable*))) args      
       (intern (with-output-to-string (out)
@@ -267,9 +267,9 @@
 
 (defun parse-function-name-spec (spec)
   (etypecase spec
-    (string (values spec (translate-name spec :underscore)))
+    (string (values spec (translate-name spec :snake-case)))
     (cons (destructuring-bind
-              (external-name &optional (lisp-name '(:underscore))) spec
+              (external-name &optional (lisp-name '(:snake-case))) spec
             (check-type external-name string)
             (etypecase lisp-name
               (symbol (values external-name lisp-name))
