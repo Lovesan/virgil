@@ -114,20 +114,14 @@
 (define-immediate-type aligned-immediate-type (aligned-type)
   ())
 
-(define-aggregate-type aligned-aggregate-type (aligned-type)
-  ())
-
 (define-type-parser aligned (align aligned-type)
   (check-type align non-negative-fixnum)
   (let ((type (parse-typespec aligned-type)))
-    (if (or (immediate-type-p type)
-            (primitive-type-p type))
-      (make-instance 'aligned-immediate-type
-        :type type
-        :align align)
-      (make-instance 'aligned-aggregate-type
-        :type type
-        :align align))))
+    (make-instance (if (immediate-type-p type)
+                     'aligned-immediate-type
+                     'aligned-type)
+      :type type
+      :align align)))
 
 (defmethod unparse-type ((type aligned-type))
   `(aligned ,(aligned-type-align type)

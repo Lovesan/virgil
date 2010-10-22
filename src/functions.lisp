@@ -31,10 +31,15 @@
       (primitive-type
         (return (primitive-type-cffi-type x)))
       (immediate-type
-        (push (unparse-type x) types)
+        (when (find x types)
+          (error
+            "Base type of immediate type ~s recursively refer to itself: ~_[~{~s~^ -> ~}]"
+            (unparse-type x)
+            (mapcar #'unparse-type (nreverse types))))
+        (push x types)
         (base-type x))
       (T (error "~:[~;~:*[~{~s~^ -> ~}]~%~]~s is neither primitive nor immediate type."
-                (nreverse types)
+                (mapcar #'unparse-type (nreverse types))
                 (unparse-type x))))))
 
 (defun error-param-initform (typespec)

@@ -36,14 +36,14 @@
 
 (defmacro define-primitive-type (&whole form name &rest options)
   (destructuring-bind
-      (&key (cffi-type (error "Please supply :cffi-type: ~s" form))
+      (&key (cffi-type (error "Please supply :cffi-type ~_~s" form))
        (lisp-type T)
        (prototype (coerce 0 lisp-type)))
       (flatten-options options)
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (define-type-parser ,name ()
-         (make-primitive-type
-             :name ',name
+         (make-instance 'primitive-type
+           :name ',name
            :cffi-type ',cffi-type
            :lisp-type ',lisp-type
            :prototype ,prototype
@@ -62,7 +62,7 @@
                                       (&rest slots)
                                       &rest options)
   (destructuring-bind
-      (&key (base-type nil base-type-p)
+      (&key (base-type 'int base-type-p)
        (lisp-type nil lisp-type-p)
        (prototype nil prototype-p)
        (prototype-expansion nil prototype-expansion-p)
@@ -82,10 +82,9 @@
       (flatten-options options)
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (defclass ,name (,@superclasses immediate-type)
-         (,@slots)
-         ,@(when base-type-p
-             `((:default-initargs :base-type
-                   (parse-typespec ',base-type)))))
+         (,@slots))
+       (defmethod base-type ((type ,name))
+         (parse-typespec ',base-type))
        ,(when simple-parser-p
           `(progn
              (define-type-parser ,simple-parser ()
@@ -141,9 +140,9 @@
                         (var-var raw-value-var body-var type-var)))
        ',name)))
 
-(defmacro define-aggregate-type (name (&rest superclasses)
-                                      (&rest slots)
-                                      &rest options)
+(defmacro define-translatable-type (name (&rest superclasses)
+                                         (&rest slots)
+                                         &rest options)
   (destructuring-bind
       (&key (size nil size-p)
        (size-expansion nil size-expansion-p)
@@ -168,21 +167,21 @@
        (slot-offset-expansion nil slot-offset-expansion-p))
       (flatten-options options)
     `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (defclass ,name (,@superclasses aggregate-type)
+       (defclass ,name (,@superclasses translatable-type)
          (,@slots))
        ,(when simple-parser-p
           `(define-type-parser ,simple-parser ()
              (make-instance ',name)))
        ,(when size-p
           (assert (not fixed-size-p) ()
-            "~s : You should not supply both :size and :fixed-size options"
-            'define-aggregate-type)
+            "You should not supply both :size and :fixed-size options: ~_~s"
+            options)
           (%type-method compute-size size name
                         (value-var type-var)))
        ,(when size-expansion-p
           (assert (not fixed-size-p) ()
-            "~s : You should not supply both :size-expansion and :fixed-size options"
-            'define-aggregate-type)
+            "You should not supply both :size-expansion and :fixed-size options: ~_~s"
+            options)
           (%type-method expand-compute-size size-expansion name
                         (value-form-var type-var)))
        ,(when fixed-size-p

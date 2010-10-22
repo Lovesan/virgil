@@ -42,114 +42,169 @@
         (apply parser args)
         (error "Undefined type: ~s" name)))))
 
-(defstruct primitive-type
-  name
-  cffi-type
-  lisp-type
-  prototype
-  prototype-expansion)
+(defclass translatable-type ()
+  ())
 
-(defclass immediate-type ()
-  ((base-type :initarg :base-type
-              :initform (parse-typespec 'int)
-              :reader base-type)))
+(defun translatable-type-p (type)
+  (typep type 'translatable-type))
 
-(defmethod base-type ((type primitive-type))
-  type)
+(defmethod make-load-form ((type translatable-type) &optional env)
+  (declare (ignore env))
+  `(parse-typespec ',(unparse-type type)))
+
+(defclass immediate-type (translatable-type)
+  ())
 
 (defun immediate-type-p (type)
   (typep type 'immediate-type))
 
-(defclass aggregate-type ()
-  ())
+(defclass primitive-type (immediate-type)
+  ((name :initarg :name
+         :reader primitive-type-name)
+   (cffi-type :initarg :cffi-type
+              :reader primitive-type-cffi-type)
+   (lisp-type :initarg :lisp-type
+              :reader primitive-type-lisp-type)
+   (prototype :initarg :prototype
+              :reader primitive-type-prototype)
+   (prototype-expansion :initarg :prototype-expansion
+                        :reader primitive-type-prototype-expansion)))
 
-(defun aggregate-type-p (type)
-  (typep type 'aggregate-type))
+(defmethod print-object ((object primitive-type) stream)
+  (print-unreadable-object
+    (object stream :type t)
+    (write (primitive-type-name object) :stream stream)))
+
+(defun primitive-type-p (type)
+  (typep type 'primitive-type))
+
+(defun error-not-translatable-type (type)
+  (error "~s is not a valid translatable type"
+         type))
+
+(defgeneric base-type (type)
+  (:method ((type primitive-type))
+    type)
+  (:method ((type immediate-type))
+    (parse-typespec 'int))
+  (:method ((type translatable-type))
+    (error "Unable to compute base type for type ~s"
+           (unparse-type type)))
+  (:method (type)
+    (error-not-translatable-type type)))
 
 (defgeneric unparse-type (type)
   (:method ((type primitive-type))
     (primitive-type-name type))
+  (:method ((type translatable-type))
+    (error "Unable to unparse type ~s" type))
   (:method (type)
-    (error "Unable to unparse type ~s" type)))
+    (error-not-translatable-type type)))
 
 (defgeneric compute-fixed-size (type)
   (:method ((type primitive-type))
     (foreign-type-size (primitive-type-cffi-type type)))
   (:method ((type immediate-type))
     (compute-fixed-size (base-type type)))
-  (:method (type)
+  (:method ((type translatable-type))
     (error "Unable to compute fixed size for type ~s"
-           (unparse-type type))))
+           (unparse-type type)))
+  (:method (type)
+    (error-not-translatable-type type)))
 
 (defgeneric compute-size (value type)
   (:method (value (type primitive-type))
     (foreign-type-size (primitive-type-cffi-type type)))
   (:method (value (type immediate-type))
     (compute-size value (base-type type)))
-  (:method (value type)
+  (:method (value (type translatable-type))
     (error "Unable to compute size of ~s with type of ~s"
-           value (unparse-type type))))
+           value (unparse-type type)))
+  (:method (value type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-compute-size (value type)
   (:method (value (type primitive-type))
     (compute-fixed-size type))
   (:method (value (type immediate-type))
     (compute-fixed-size type))
+  (:method (value (type translatable-type))
+    `(compute-size ,value ,type))
   (:method (value type)
-    `(compute-size ,value (parse-typespec ',(unparse-type type)))))
+    (error-not-translatable-type type)))
 
 (defgeneric compute-alignment (type)
   (:method ((type primitive-type))
     (foreign-type-alignment (primitive-type-cffi-type type)))
   (:method ((type immediate-type))
     (compute-alignment (base-type type)))
-  (:method (type)
+  (:method ((type translatable-type))
     (error "Unable to compute alignment of type ~s"
-           (unparse-type type))))
+           (unparse-type type)))
+  (:method (type)
+    (error-not-translatable-type type)))
 
 (defgeneric compute-slot-offset (slot type)
-  (:method (slot type)
+  (:method (slot (type translatable-type))
     (error "Unable to compute offset of slot ~s for type ~s"
-           slot (unparse-type type))))
+           slot (unparse-type type)))
+  (:method (slot type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-compute-slot-offset (slot type)
+  (:method (slot-form (type translatable-type))
+    `(compute-slot-offset ,slot-form ,type))
   (:method (slot-form type)
-    `(compute-slot-offset ,slot-form
-                          (parse-typespec ',(unparse-type type)))))
+   (error-not-translatable-type type)))
 
 (defgeneric prototype (type)
   (:method ((type primitive-type))
     (primitive-type-prototype type))
   (:method ((type immediate-type))
     (prototype (base-type type)))
-  (:method (type)
+  (:method ((type translatable-type))
     (error "Unable to compute prototype of type ~s"
-           (unparse-type type))))
+           (unparse-type type)))
+  (:method (type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-prototype (type)
   (:method ((type primitive-type))
     (primitive-type-prototype-expansion type))
+  (:method ((type translatable-type))
+    `(prototype ,type))
   (:method (type)
-    `(prototype (parse-typespec ',(unparse-type type)))))
+    (error-not-translatable-type type)))
 
 (defgeneric lisp-type (type)
   (:method ((type primitive-type))
     (primitive-type-lisp-type type))
   (:method ((type immediate-type))
     (lisp-type (base-type type)))
-  (:method (type) T))
+  (:method ((type translatable-type))
+    T)
+  (:method (type)
+   (error-not-translatable-type type)))
 
 (defgeneric convert-value (lisp-value type)
-  (:method (lisp-value type)
+  (:method (lisp-value (type translatable-type))
+    lisp-value)
+  (:method (lisp-value (type primitive-type))
     lisp-value)
   (:method (lisp-value (type immediate-type))
-    (convert-value lisp-value (base-type type))))
+    (convert-value lisp-value (base-type type)))
+  (:method (lisp-value type)
+    (error-not-translatable-type type)))
 
 (defgeneric translate-value (raw-value type)
   (:method (raw-value (type immediate-type))
     (translate-value raw-value (base-type type)))
+  (:method (raw-value (type primitive-type))
+    raw-value)
+  (:method (raw-value (type translatable-type))
+    raw-value)
   (:method (raw-value type)
-    raw-value))
+    (error-not-translatable-type type)))
 
 (defgeneric read-value (pointer out type)
   (:method (pointer out (type primitive-type))
@@ -159,9 +214,11 @@
     (translate-value
       (read-value pointer out (base-type type))
       type))
-  (:method (pointer out type)
+  (:method (pointer out (type translatable-type))
     (error "Unable to read value of type ~s"
-           (unparse-type type))))
+           (unparse-type type)))
+  (:method (pointer out type)
+    (error-not-translatable-type type)))
 
 (defgeneric write-value (value pointer type)
   (:method (value pointer (type primitive-type))
@@ -170,42 +227,52 @@
     (write-value (convert-value value type)
                  pointer
                  (base-type type)))
-  (:method (value pointer type)
+  (:method (value pointer (type translatable-type))
     (error "Unable to write value of type ~s"
-           (unparse-type type))))
+           (unparse-type type)))
+  (:method (value pointer type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-translate-value (raw-value type)
-  (:method (raw-value type)
-    `(translate-value ,raw-value (parse-typespec ',(unparse-type type))))
+  (:method (raw-value (type translatable-type))
+    `(translate-value ,raw-value ,type))
   (:method (raw-value (type primitive-type))
-    raw-value))
+    raw-value)
+  (:method (raw-value type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-convert-value (lisp-value type)
-  (:method (lisp-value type)
-    `(convert-value ,lisp-value (parse-typespec ',(unparse-type type))))
+  (:method (lisp-value (type translatable-type))
+    `(convert-value ,lisp-value ,type))
   (:method (lisp-value (type primitive-type))
-    lisp-value))
+    lisp-value)
+  (:method (lisp-value type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-read-value (pointer out type)
-  (:method (pointer out type)
-    `(read-value ,pointer ,out (parse-typespec ',(unparse-type type))))
+  (:method (pointer out (type translatable-type))
+    `(read-value ,pointer ,out ,type))
   (:method (pointer out (type primitive-type))
     (declare (ignore out))
     `(mem-ref ,pointer ',(primitive-type-cffi-type type)))
   (:method (pointer out (type immediate-type))
     (expand-translate-value
       (expand-read-value pointer out (base-type type))
-      type)))
+      type))
+  (:method (pointer out type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-write-value (value pointer type)
-  (:method (value pointer type)
-    `(write-value ,value ,pointer (parse-typespec ',(unparse-type type))))
+  (:method (value pointer (type translatable-type))
+    `(write-value ,value ,pointer ,type))
   (:method (value pointer (type primitive-type))
     `(setf (mem-ref ,pointer ',(primitive-type-cffi-type type)) ,value))
   (:method (value pointer (type immediate-type))
     (expand-write-value (expand-convert-value value type)
                         pointer
-                        (base-type type))))
+                        (base-type type)))
+  (:method (value pointer type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-dynamic-extent (var value-var body type)
   (:method (var value-var body type)
@@ -213,48 +280,60 @@
        ,@body)))
 
 (defgeneric expand-callback-dynamic-extent (var raw-value body type)
-  (:method (var raw-value body type)
+  (:method (var raw-value body (type translatable-type))
     `(let ((,var ,(expand-translate-value raw-value type)))
        (declare (type ,(lisp-type type) ,var))
-       ,@body)))
+       ,@body))
+  (:method (var raw-value body type)
+    (error-not-translatable-type type)))
 
 (defgeneric allocate-value (value type)
-  (:method (value type)
+  (:method (value (type translatable-type))
     (foreign-alloc :uint8 :count (compute-size value type)))
   (:method (value (type primitive-type))
-    (foreign-alloc (primitive-type-cffi-type type))))
+    (foreign-alloc (primitive-type-cffi-type type)))
+  (:method (value type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-allocate-value (value-form type)
-  (:method (value-form type)
-    `(allocate-value ,value-form
-                     (parse-typespec ',(unparse-type type))))
+  (:method (value-form (type translatable-type))
+    `(allocate-value ,value-form ,type))
   (:method (value-form (type primitive-type))
-    `(foreign-alloc ',(primitive-type-cffi-type type))))
+    `(foreign-alloc ',(primitive-type-cffi-type type)))
+  (:method (value-form type)
+    (error-not-translatable-type type)))
 
 (defgeneric clean-value (pointer value type)
+  (:method (pointer value (type translatable-type))
+    nil)
   (:method (pointer value type)
-    nil))
+    (error-not-translatable-type type)))
 
 (defgeneric expand-clean-value (pointer value type)
   (:method (pointer value (type primitive-type))
     nil)
+  (:method (pointer value (type translatable-type))
+    `(clean-value ,pointer ,value ,type))
   (:method (pointer value type)
-   `(clean-value ,pointer ,value (parse-typespec
-                                   ',(unparse-type type)))))
+    (error-not-translatable-type type)))
 
 (defgeneric free-value (pointer type)
-  (:method (pointer type)
+  (:method (pointer (type translatable-type))
     (declare (type foreign-pointer pointer))
     (foreign-free pointer)
-    nil))
+    nil)
+  (:method (pointer type)
+    (error-not-translatable-type type)))
 
 (defgeneric expand-free-value (pointer-form type)
-  (:method (pointer-form type)
-    `(free-value ,pointer-form (parse-typespec ',(unparse-type type))))
+  (:method (pointer-form (type translatable-type))
+    `(free-value ,pointer-form ,type))
   (:method (pointer-form (type primitive-type))
     `(progn 
        (foreign-free (the foreign-pointer ,pointer-form))
-       nil)))
+       nil))
+  (:method (pointer-form type)
+    (error-not-translatable-type type)))
 
 (defmacro %unwind-protect (form &rest cleanup-forms)
   (if (find (complement #'constantp) cleanup-forms)
@@ -265,7 +344,7 @@
 
 (defgeneric expand-reference-dynamic-extent
     (var size-var value-var body mode type)
-  (:method (var size-var value-var body mode type)
+  (:method (var size-var value-var body mode (type translatable-type))
     (with-gensyms (pointer-var)
       `(with-foreign-pointer (,pointer-var ,(eval-if-constantp
                                               (expand-compute-size value-var type))
@@ -285,7 +364,9 @@
                                        ,(expand-read-value
                                           pointer-var value-var type))))))
              (progn               
-               ,(expand-clean-value pointer-var value-var type))))))))
+               ,(expand-clean-value pointer-var value-var type)))))))
+  (:method (var size-var value-var body mode type)
+    (error-not-translatable-type type)))
 
 (defun eval-if-constantp (x)
   (if (constantp x)

@@ -242,7 +242,7 @@
                 pointer)
             (error (e) (foreign-free (the pointer pointer)) (error e))))))))
 
-(define-aggregate-type string-type ()
+(define-translatable-type string-type ()
   ((encoding :initform :encoding
              :initarg :encoding
              :reader strtype-encoding))
@@ -283,7 +283,7 @@
   (:deallocator-expansion (pointer type)
     `(foreign-free ,pointer)))
 
-(define-aggregate-type static-string-type (string-type)
+(define-translatable-type static-string-type (string-type)
   ((byte-length :initarg :byte-length
                 :initform 0
                 :reader strtype-byte-length))

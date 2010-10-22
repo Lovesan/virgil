@@ -32,8 +32,10 @@
                  :reader enum-type-kv)
    (values->keys :initarg :vk
                  :initform '()
-                 :reader enum-type-vk))
-  (:base-type int)
+                 :reader enum-type-vk)
+   (base-type :initarg :base-type
+              :initform (parse-typespec 'int)
+              :reader base-type))
   (:prototype (type) 0)
   (:prototype-expansion (type) 0)
   (:lisp-type (type)
@@ -74,7 +76,7 @@
   (:deallocator-expansion (pointer type)
     `(foreign-free ,pointer)))
 
-(define-aggregate-type named-enum-type (enum-type)
+(define-immediate-type named-enum-type (enum-type)
   ((name :initarg :name
          :initform nil
          :reader enum-type-name))

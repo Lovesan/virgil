@@ -24,7 +24,7 @@
 
 (in-package #:virgil)
 
-(defclass proxy-type ()
+(defclass proxy-type (translatable-type)
   ((proxied-type
      :initform (error "Supply proxied type to proxy type")
      :initarg :type

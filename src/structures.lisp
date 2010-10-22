@@ -27,7 +27,7 @@
 (defvar *struct-type-hash* (make-hash-table :test #'eq))
 (defvar *union-type-hash* (make-hash-table :test #'eq))
 
-(define-aggregate-type struct-type ()
+(define-translatable-type struct-type ()
   ((slots :initform nil
           :initarg :slots
           :reader struct-slots)
@@ -152,7 +152,7 @@
                          ',(unparse-type type)
                          ,member-name)))))))))
 
-(define-aggregate-type named-struct-type (struct-type)
+(define-translatable-type named-struct-type (struct-type)
   ((name :initform nil
          :initarg :name
          :reader struct-name)
@@ -435,7 +435,7 @@
 (defun union-default-type (type)
   (lastcar (ensure-list (lisp-type type))))
 
-(define-aggregate-type union-type (struct-type)
+(define-translatable-type union-type (struct-type)
   ()
   (:lisp-type (type)
     `(or ,@(mapcar (lambda (slot &aux (type (second slot)))                     
@@ -504,11 +504,13 @@
          (,(union-default-type type) ,(call-next-method pointer value type))))))
 
 ;;Time for CLOS magic to come
-(define-aggregate-type named-union-type (union-type named-struct-type)
+(define-translatable-type named-union-type (union-type named-struct-type)
   ())
 
 (define-immediate-type immediate-union-type (union-type)
-  ()
+  ((base-type :initarg :base-type
+              :initform (error "Immediate union w/o base type")              
+              :reader base-type))
   (:converter (value type)
     (with-foreign-pointer (p (compute-fixed-size (base-type type)))
       (write-value value p type)

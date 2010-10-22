@@ -30,43 +30,7 @@
               :initarg :predicate)
    (handler :initform 'identity
             :reader filtered-type-handler
-            :initarg :handler)))
-
-(define-immediate-type immediate-filtered-type (filtered-type)
-  ()
-  (:converter (value type)
-    (convert-value
-      (if (funcall (fdefinition (filtered-type-predicate type)) value)
-        value
-        (funcall (fdefinition (filtered-type-handler type)) value))
-      (proxied-type type)))
-  (:converter-expansion (value-form type)
-    (with-gensyms (value)
-      `(let ((,value (the ,(lisp-type type) ,value-form)))
-         (if (funcall #',(filtered-type-predicate type) ,value)
-           ,(expand-convert-value
-              value
-              (proxied-type type))
-           (let ((,value (funcall #',(filtered-type-handler type) ,value)))
-             (declare (type ,(lisp-type type) ,value))
-             ,(expand-convert-value
-                value
-                (proxied-type type)))))))
-  (:translator (value type)
-    (let ((value (translate-value value (proxied-type type))))
-      (if (funcall (fdefinition (filtered-type-predicate type)) value)
-        value
-        (funcall (fdefinition (filtered-type-handler type)) value))))
-  (:translator-expansion (value-form type)
-    (with-gensyms (value)
-      `(let ((,value ,(expand-translate-value value-form (proxied-type type))))
-         (declare (type ,(lisp-type type) ,value))
-         (if (funcall #',(filtered-type-predicate type) ,value)
-           ,value
-           (funcall #',(filtered-type-handler type) ,value))))))
-
-(define-aggregate-type aggregate-filtered-type (filtered-type)
-  ()
+            :initarg :handler))
   (:writer (value pointer type)
     (write-value
       (if (funcall (fdefinition (filtered-type-predicate type)) value)
@@ -134,6 +98,39 @@
                                             ,value)))
                     (setf ,value-var ,value))))))))
 
+(define-immediate-type filtered-immediate-type (filtered-type)
+  ()
+  (:converter (value type)
+    (convert-value
+      (if (funcall (fdefinition (filtered-type-predicate type)) value)
+        value
+        (funcall (fdefinition (filtered-type-handler type)) value))
+      (proxied-type type)))
+  (:converter-expansion (value-form type)
+    (with-gensyms (value)
+      `(let ((,value (the ,(lisp-type type) ,value-form)))
+         (if (funcall #',(filtered-type-predicate type) ,value)
+           ,(expand-convert-value
+              value
+              (proxied-type type))
+           (let ((,value (funcall #',(filtered-type-handler type) ,value)))
+             (declare (type ,(lisp-type type) ,value))
+             ,(expand-convert-value
+                value
+                (proxied-type type)))))))
+  (:translator (value type)
+    (let ((value (translate-value value (proxied-type type))))
+      (if (funcall (fdefinition (filtered-type-predicate type)) value)
+        value
+        (funcall (fdefinition (filtered-type-handler type)) value))))
+  (:translator-expansion (value-form type)
+    (with-gensyms (value)
+      `(let ((,value ,(expand-translate-value value-form (proxied-type type))))
+         (declare (type ,(lisp-type type) ,value))
+         (if (funcall #',(filtered-type-predicate type) ,value)
+           ,value
+           (funcall #',(filtered-type-handler type) ,value))))))
+
 (defun valid-function-name-p (name)
   (or (symbolp name)
       (and (proper-list-p name)
@@ -148,10 +145,9 @@
   (assert (valid-function-name-p handler)
       (handler))
   (let ((type (parse-typespec type)))
-    (make-instance (if (or (primitive-type-p type)
-                           (immediate-type-p type))
-                     'immediate-filtered-type
-                     'aggregate-filtered-type)
+    (make-instance (if (immediate-type-p type)
+                     'filtered-immediate-type
+                     'filtered-type)
       :type type
       :predicate predicate
       :handler handler)))

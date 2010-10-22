@@ -209,11 +209,7 @@
   'void)
 
 (define-immediate-type void-type ()
-  ((base-type :initform (make-primitive-type
-                          :name :void
-                          :cffi-type :void
-                          :lisp-type 'void
-                          :prototype void)))
+  ()
   (:simple-parser void)
   (:lisp-type (type) T)
   (:prototype (type) void)
@@ -230,6 +226,13 @@
   (:deallocator-expansion (pointer type) (error-void-operation))
   (:dynamic-extent-expansion (var val body type)
     (error-void-operation)))
+
+(defmethod base-type ((type void-type))
+  (make-instance 'primitive-type
+    :name :void
+    :cffi-type :void
+    :lisp-type 'void
+    :prototype void))
 
 (defmethod compute-fixed-size ((type void-type))
   (error-void-operation))

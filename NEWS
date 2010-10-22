@@ -1,3 +1,17 @@
+v0.4.0
+    * bug fix: Named enums were treated as aggregate types
+    * incompatible changes: All types were reorganized into new hierarchy:
+        ** All types that were defined with either DEFINE-PRIMITIVE-TYPE,
+            DEFINE-IMMEDIATE-TYPE, DEFINE-PROXY-TYPE, or
+            DEFINE-TRANSLATABLE-TYPE are translatable types
+        ** Core generics were specialized on T for type parameter.
+            In this case they will throw error and report that supplied type
+            is not a translatable type
+        ** All primitive types are now immediate types
+        ** All types that are not immediate, are now treated as aggregate.
+            DEFINE-AGGREGATE-TYPE was renamed to DEFINE-TRANSLATABLE-TYPE
+    * improvement: Few tests added
+
 v0.3.0
     * new feature: Immediate union types. When all types in union are
         either primitive or immediate, union type also will be treated

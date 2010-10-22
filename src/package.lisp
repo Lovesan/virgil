@@ -79,13 +79,13 @@
     #:defalias
     #:define-primitive-type
     #:define-immediate-type
-    #:define-aggregate-type
+    #:define-translatable-type
     #:define-proxy-type
     
     ;;type predicates
+    #:translatable-type-p
     #:primitive-type-p
     #:immediate-type-p
-    #:aggregate-type-p
     #:proxy-type-p
     
     ;;primitive types

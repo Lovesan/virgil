@@ -24,7 +24,7 @@
 
 (in-package #:virgil)
 
-(define-aggregate-type sequence-type ()
+(define-translatable-type sequence-type ()
   ((element-type :initarg :element-type
                  :initform nil
                  :reader st-elt-type)
@@ -51,7 +51,7 @@
   (:deallocator-expansion (pointer type)
     `(foreign-free ,pointer)))
 
-(define-aggregate-type static-sequence-type (sequence-type)
+(define-translatable-type static-sequence-type (sequence-type)
   ((length :initarg :length 
            :initform 0
            :reader st-length))
@@ -300,7 +300,7 @@
               `(elt ,value ,i)
               elt-type))))))
 
-(define-aggregate-type array-type ()
+(define-translatable-type array-type ()
   ((element-type :initform nil :initarg :element-type
                  :reader at-elt-type))
   (:size (value type)
@@ -322,7 +322,7 @@
   (:deallocator (pointer type)
     `(foreign-free ,pointer)))
 
-(define-aggregate-type static-array-type (array-type)
+(define-translatable-type static-array-type (array-type)
   ((dimensions :initarg :dimensions :initform '()
                :reader at-dims))
   (:fixed-size (type)
@@ -340,12 +340,12 @@
        :element-type ',(lisp-type (at-elt-type type))
        :initial-element ,(expand-prototype (at-elt-type type)))))
 
-(define-aggregate-type simple-array-type (array-type)
+(define-translatable-type simple-array-type (array-type)
   ()
   (:lisp-type (type)
     `(simple-array ,(lisp-type (at-elt-type type)))))
 
-(define-aggregate-type static-simple-array-type
+(define-translatable-type static-simple-array-type
     (simple-array-type static-array-type)
   ()
   (:lisp-type (type)
@@ -400,7 +400,7 @@
 
 (defun error-no-output-supplied (type)
   (error "Type ~s needs output to be supplied in read operations"
-         (unparse-type type)))
+         type))
 
 (defmethod read-value (pointer out (type array-type))
   (let* ((total-size (if (null out)
