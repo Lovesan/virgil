@@ -220,3 +220,90 @@
                          (eq out (deref p ',ts 0 out))
                          (equalp out struct))
                   (free p ',ts)))))))
+
+(define-struct (test-list
+                 (:constructor
+                   test-list (value &optional (next void))))
+  (value int)
+  (next (& test-list :in t) :initform void))
+
+(deftest structs.named.recursive.alloc-read-write-free
+    (let ((ts 'test-list))
+      (and (let* ((struct (test-list 1 (test-list 2)))
+                  (out (test-list 0 (test-list 0)))
+                  (p (alloc ts struct)))
+             (unwind-protect
+                 (and (equalp struct (deref p ts))
+                      (eq out (deref p ts 0 out))
+                      (equalp out struct)
+                      (with-pointer (p struct ts)
+                        (equalp struct (deref p ts))))
+               (free p ts)))
+           (compiled
+             `(let* ((struct (test-list 1 (test-list 2)))
+                     (out (test-list 0 (test-list 0)))
+                     (p (alloc ',ts struct)))
+                (unwind-protect
+                    (and (equalp struct (deref p ',ts))
+                         (eq out (deref p ',ts 0 out))
+                         (equalp out struct)
+                         (with-pointer (p struct ',ts)
+                           (equalp struct (deref p ',ts))))
+                  (free p ',ts)))))))
+
+(defun circle-length (circle)
+  (let ((passed '()))
+    (loop :for i :from 0
+      :for iter = circle :then (test-list-next iter)
+      :do (if (find iter passed)
+            (return i)
+            (push iter passed)))))
+
+(defun circle-equal (circle1 circle2)
+  (let ((passed '()))
+    (and (= (circle-length circle1)
+            (circle-length circle2))
+         (loop :for iter1 = circle1 :then (test-list-next iter1)
+           :for iter2 = circle2 :then (test-list-next iter2)
+           :do (when (find iter1 passed)
+                 (return t))
+           (if (= (test-list-value iter1)
+                      (test-list-value iter2))
+                 (push iter1 passed)
+                 (return nil))))))
+
+(defun make-test-circle (last &rest rest)
+  (let ((last (test-list last)))
+    (loop :for arg :in rest
+      :for struct = (test-list arg last)
+      :then (test-list arg struct)
+      :finally (setf (test-list-next last) struct)
+      (return struct))))
+
+(deftest structs.named.circular.alloc-read-write-free
+    (let ((ts 'test-list))
+      (and (let* ((circle (make-test-circle 3 2 1 0))
+                  (out (make-test-circle 0 0 0 0)))
+             (with-circular-references
+                 (let ((p (alloc ts circle)))
+                   (unwind-protect
+                       (and (with-circular-references
+                                (circle-equal circle (deref p ts)))
+                            (eq out (deref p ts 0 out))
+                            (circle-equal out circle)
+                            (with-pointer (p circle ts)
+                              (circle-equal circle (deref p ts))))
+                     (free p ts)))))
+           (compiled
+             `(let* ((circle (make-test-circle 3 2 1 0))
+                     (out (make-test-circle 0 0 0 0)))
+                (with-circular-references
+                    (let ((p (alloc ',ts circle)))
+                      (unwind-protect
+                          (and (with-circular-references
+                                   (circle-equal circle (deref p ',ts)))
+                               (eq out (deref p ',ts 0 out))
+                               (circle-equal out circle)
+                               (with-pointer (p circle ',ts)
+                                 (circle-equal circle (deref p ',ts))))
+                        (free p ',ts))))))))) 

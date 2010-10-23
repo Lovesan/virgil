@@ -57,9 +57,7 @@
   (:fixed-size (type) (struct-size type))
   (:align (type) (struct-align type))
   (:reader (pointer out type)
-    (let* ((result (if (null out)
-                     (prototype type)
-                     out)))
+    (let* ((result (or out (prototype type))))
       (declare (type hash-table result))
       (loop :for (name slot-type offset) :in (struct-slots type)
         :do (setf (gethash name result)
@@ -70,9 +68,7 @@
   (:reader-expansion (pointer out type)
     (with-gensyms (result)
       (once-only (pointer out)
-        `(let ((,result (if (null ,out)
-                          ,(expand-prototype type)
-                          ,out)))
+        `(let ((,result (or ,out ,(expand-prototype type))))
            (declare (type hash-table ,result)
                     (type pointer ,pointer))
            ,@(loop :for (name slot-type offset) :in (struct-slots type)
@@ -152,6 +148,10 @@
                          ',(unparse-type type)
                          ,member-name)))))))))
 
+(defvar *readen-struct-types* '())
+(defvar *written-struct-types* '())
+(defvar *cleaned-struct-types* '())
+
 (define-translatable-type named-struct-type (struct-type)
   ((name :initform nil
          :initarg :name
@@ -174,10 +174,8 @@
   (:prototype-expansion (type)
     `(,(struct-ctor-name type)))
   (:reader (pointer out type)
-    (let ((result (if (null out)
-                    (prototype type)
-                    out))
-          (conc-name (struct-conc-name type)))
+    (let* ((result (or out (prototype type)))
+           (conc-name (struct-conc-name type)))
       (when (struct-included type)
         (read-value pointer result (struct-included type)))
       (loop :for (slot-name slot-type offset) :in (struct-slots type)
@@ -189,80 +187,120 @@
                                  slot-type)
                      result))
       result))
-  (:reader-expansion (pointer out type)
-    (with-gensyms (result)
-      (once-only (out pointer)
-        `(let ((,result (if (null ,out)
-                          (,(struct-ctor-name type))
-                          ,out)))
-          (declare (type pointer ,pointer)
-                   (type ,(lisp-type type) ,result))
-           ,(when (struct-included type)
-              (expand-read-value pointer result (struct-included type)))
-           ,@(loop :with conc-name = (struct-conc-name type)
-               :for (slot-name slot-type offset) :in (struct-slots type)
-               :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                                       (struct-package type))
-               :collect `(setf (,accessor ,result)
-                               ,(expand-read-value
-                                  `(&+ ,pointer ,offset)
-                                  `(,accessor ,result)
-                                  slot-type)))
-           ,result))))
   (:writer (value pointer type)
     (when (struct-included type)
       (write-value value pointer (struct-included type)))
     (loop :with conc-name = (struct-conc-name type)
-      :for (slot-name slot-type offset) :in (struct-slots type)
-      :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                              (struct-package type))
-      :do (write-value (funcall accessor value)
-                       (&+ pointer offset)
-                       slot-type)))
-  (:writer-expansion (value-form pointer-form type)
-    (with-gensyms (pointer value)
-      `(let ((,pointer ,pointer-form) (,value ,value-form))
-         (declare (type pointer ,pointer)
-                  (type ,(lisp-type type) ,value))
-         ,(when (struct-included type)
-            (expand-write-value value pointer (struct-included type)))
-         ,@(loop :with conc-name = (struct-conc-name type)
-             :for (slot-name slot-type offset) :in (struct-slots type)
-             :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                                     (struct-package type))
-             :collect (expand-write-value
-                        `(,accessor ,value)
-                        `(&+ ,pointer ,offset)
-                        slot-type))
-         ,pointer)))
+          :for (slot-name slot-type offset) :in (struct-slots type)
+          :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                  (struct-package type))
+          :do (write-value (funcall accessor value)
+                           (&+ pointer offset)
+                           slot-type))
+    value)
   (:cleaner (pointer value type)
     (when (struct-included type)
       (clean-value pointer value (struct-included type)))
     (loop :with conc-name = (struct-conc-name type)
-      :for (slot-name slot-type offset) :in (struct-slots type)
-      :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                              (struct-package type))
-      :do (clean-value (&+ pointer offset)
-                         (funcall accessor value)
-                         slot-type)))
-  (:cleaner-expansion (pointer-form value-form type)
-    (with-gensyms (pointer value)
-      `(let ((,pointer ,pointer-form)
-             (,value ,value-form))
-         (declare (type pointer ,pointer)
-                  (type ,(lisp-type type) ,value)
-                  (ignorable ,pointer ,value))
-         ,(when (struct-included type)
-            (expand-clean-value pointer value (struct-included type)))
-         ,@(loop :with conc-name = (struct-conc-name type)
-             :for (slot-name slot-type offset) :in (struct-slots type)
-             :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                                     (struct-package type))
-             :collect (expand-clean-value
-                        `(&+ ,pointer ,offset)
-                        `(,accessor ,value)
-                        slot-type))))))
+          :for (slot-name slot-type offset) :in (struct-slots type)
+          :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                  (struct-package type))
+          :do (clean-value (&+ pointer offset)
+                           (funcall accessor value)
+                           slot-type))))
 
+(defun make-reader-name (type)
+  (intern (format nil "~a::~a::~a"
+                  (package-name *package*)
+                  (struct-name type)
+                  'reader)
+          :virgil))
+
+(defun make-writer-name (type)
+  (intern (format nil "~a::~a::~a"
+                  (package-name *package*)
+                  (struct-name type)
+                  'writer)
+          :virgil))
+
+(defun make-cleaner-name (type)
+  (intern (format nil "~a::~a::~a"
+                  (package-name *package*)
+                  (struct-name type)
+                  'writer)
+          :virgil))
+
+(defmethod expand-read-value (pointer-form out-form (type named-struct-type))
+  (let ((reader (make-reader-name type)))
+    (if (find (struct-name type) *readen-struct-types*)
+      `(,reader ,pointer-form ,out-form)
+      (let ((*readen-struct-types* (cons (struct-name type)
+                                         *readen-struct-types*)))
+        (with-gensyms (result pointer out)
+          `(labels ((,reader (,pointer ,out)
+                      (declare (type pointer ,pointer))
+                      (let* ((,result (or ,out ,(expand-prototype type))))
+                        (declare (type ,(lisp-type type) ,result))
+                        ,(when (struct-included type)
+                           (expand-read-value pointer result (struct-included type)))
+                        ,@(loop :with conc-name = (struct-conc-name type)
+                            :for (slot-name slot-type offset) :in (struct-slots type)
+                            :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                                    (struct-package type))
+                            :collect `(setf (,accessor ,result)
+                                            ,(expand-read-value
+                                               `(&+ ,pointer ,offset)
+                                               `(,accessor ,result)
+                                               slot-type)))
+                        ,result)))
+             (,reader ,pointer-form ,out-form)))))))
+
+(defmethod expand-write-value (value-form pointer-form (type named-struct-type))
+  (let ((writer (make-writer-name type)))
+    (if (find (struct-name type) *written-struct-types*)
+      `(,writer ,value-form ,pointer-form)
+      (let ((*written-struct-types* (cons (struct-name type)
+                                          *written-struct-types*)))
+        (with-gensyms (pointer value)
+          `(labels ((,writer (,value ,pointer)
+                      (declare (type pointer ,pointer)
+                               (type ,(lisp-type type) ,value))
+                      ,(when (struct-included type)
+                         (expand-write-value value pointer (struct-included type)))
+                      ,@(loop :with conc-name = (struct-conc-name type)
+                          :for (slot-name slot-type offset) :in (struct-slots type)
+                          :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                                  (struct-package type))
+                          :collect (expand-write-value
+                                     `(,accessor ,value)
+                                     `(&+ ,pointer ,offset)
+                                     slot-type))
+                      ,value))
+             (,writer ,value-form ,pointer-form)))))))
+
+(defmethod expand-clean-value (pointer-form value-form (type named-struct-type))
+  (let ((cleaner (make-cleaner-name type)))
+    (if (find (struct-name type) *cleaned-struct-types*)
+      `(,cleaner ,pointer-form ,value-form)
+      (let ((*cleaned-struct-types* (cons (struct-name type)
+                                          *cleaned-struct-types*)))
+        (with-gensyms (pointer value)
+          `(labels ((,cleaner (,pointer ,value)
+                      (declare (type pointer ,pointer)
+                               (type ,(lisp-type type) ,value)
+                               (ignorable ,value))                        
+                      ,(when (struct-included type)
+                         (expand-clean-value pointer value (struct-included type)))
+                      ,@(loop :with conc-name = (struct-conc-name type)
+                          :for (slot-name slot-type offset) :in (struct-slots type)
+                          :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                                  (struct-package type))
+                          :collect (expand-clean-value
+                                     `(&+ ,pointer ,offset)
+                                     `(,accessor ,value)
+                                     slot-type))))
+             (,cleaner ,pointer-form ,value-form)))))))
+  
 (defun parse-struct-slots (included slots named align-supplied packed)
   (loop :with current-offset = (if included
                                  (struct-size-no-padding included)
@@ -283,6 +321,8 @@
                  "Invalid slot name: ~s" slot-spec)
                (when (member name names :test #'eq)
                  (error "Duplicate slot names in struct"))
+               (when (eq type named)
+                 (error "Recursive structure definition: ~s" slot-spec))
                (let ((type (parse-typespec type)))
                  (destructuring-bind
                      (&key (align (if packed
@@ -337,26 +377,30 @@
 (defmethod unparse-type ((type named-struct-type))
   (struct-name type))
 
-(defun notice-struct-definition
-    (name ctor-name conc-name include align packed slots)
-  (setf (gethash name *struct-type-hash*)
-        (let ((included (when include
-                          (or (gethash include *struct-type-hash*)
-                              (error "Undefined structure type: ~s"
-                                     include)))))
-          (multiple-value-bind
-              (slots size size-no-padding align)
-              (parse-struct-slots included slots name align packed)
-            (make-instance 'named-struct-type
-              :name name
-              :ctor-name ctor-name
-              :conc-name conc-name
-              :size size
-              :include included
-              :size-no-padding size-no-padding
-              :align align
-              :slots slots)))))
-
+(defun notice-struct-definition (name ctor-name options slots)
+  (let ((conc-name (getf options :conc-name))
+        (include (getf options :include))
+        (align (getf options :align))
+        (packed (getf options :packed)))
+    (let ((included (when include
+                      (or (gethash include *struct-type-hash*)
+                          (error "Undefined structure type: ~s"
+                                 include))))
+          (type (setf (gethash name *struct-type-hash*)
+                      (make-instance 'named-struct-type))))
+      (multiple-value-bind
+          (slots size size-no-padding align)
+          (parse-struct-slots included slots name align packed)
+        (setf (slot-value type 'name) name
+              (slot-value type 'ctor-name) ctor-name
+              (slot-value type 'conc-name) conc-name
+              (slot-value type 'size-no-padding) size-no-padding              
+              (slot-value type 'size) size
+              (slot-value type 'align) align
+              (slot-value type 'included) included
+              (slot-value type 'slots) slots))))
+  nil)
+  
 (defun slots->defstruct-slots (slots)
   (loop :for spec :in slots
     :collect (let* ((name (car spec))
@@ -368,69 +412,140 @@
                    (cddr spec)
                  (list name initform :type (lisp-type type))))))
 
+(defun assert-not-duplicate-option (option-name options unparsed)
+  (when (getf options option-name)
+    (error "Duplicate ~s option: ~s" option-name unparsed)))
+
+(defun assert-symbolp-option-name (option-name name rest)
+  (unless (symbolp name)
+    (error "~s name is not a symbol: ~s"
+           option-name (cons option-name rest))))
+
+(defun parse-struct-options (name unparsed)
+  (let ((options '()))
+    (loop :for (oname . rest) :in unparsed
+      :do (case oname
+            (:conc-name (destructuring-bind
+                            (&optional name) rest
+                          (unless name (setf name ""))
+                          (assert-not-duplicate-option :conc-name options unparsed)
+                          (setf (getf options :conc-name) name)))
+            (:constructor (destructuring-bind
+                              (name &optional (args nil args-p)) rest
+                            (assert-symbolp-option-name :constructor name rest)
+                            (unless (listp args)
+                              (error "Invalid constructor lambda-list: ~s"
+                                     (cons name rest)))
+                            (push (cons name (if args-p (list args) '()))
+                                  (getf options :constructors))))
+            (:type (destructuring-bind
+                       (name) rest
+                     (assert-not-duplicate-option :type options unparsed)
+                     (setf (getf options :type) name)))
+            (:copier (destructuring-bind
+                         (name) rest
+                       (assert-symbolp-option-name :copier name rest)
+                       (assert-not-duplicate-option :copier options unparsed)
+                       (setf (getf options :copier) name)))
+            (:align (destructuring-bind
+                        (align) rest
+                      (check-type align non-negative-fixnum)
+                      (assert-not-duplicate-option :align options unparsed)
+                      (setf (getf options :align) align)))
+            (:packed (destructuring-bind
+                         (packed) rest
+                       (check-type packed boolean)
+                       (assert-not-duplicate-option :packed options unparsed)
+                       (setf (getf options :packed) packed)))
+            (:include (destructuring-bind
+                          (include) rest
+                        (check-type include symbol)
+                        (assert-not-duplicate-option :include options unparsed)
+                        (setf (getf options :include) include)))
+            (:predicate (destructuring-bind
+                            (name) rest
+                          (assert-symbolp-option-name :predicate name rest)
+                          (assert-not-duplicate-option :predicate options unparsed)
+                          (setf (getf options :predicate) name)))
+            (:print-object (destructuring-bind
+                               (printer) rest
+                             (assert-not-duplicate-option :print-object
+                               options unparsed)
+                             (setf (getf options :print-object) printer)))
+            (:print-function (destructuring-bind
+                                 (printer) rest
+                               (assert-not-duplicate-option :print-function
+                                 options unparsed)
+                               (setf (getf options :print-function) printer)))))
+    (let ((nokey (gensym)))
+      (when (eq nokey (getf options :constructors nokey))
+        (push (list (intern (format nil "~a-~a" 'make name)))
+              (getf options :constructors)))
+      (when (eq nokey (getf options :conc-name nokey))
+        (setf (getf options :conc-name)
+              (format nil "~a-" name)))
+      (when (eq nokey (getf options :predicate nokey))
+        (setf (getf options :predicate)
+              (intern (format nil "~a-~a" name 'p)))))
+    options))
+
+(defmacro %define-struct (name ctor-name options &body slots)
+  (destructuring-bind
+      (&key conc-name constructors (copier nil copier-p)
+       predicate (type nil type-p) (print-object nil print-object-p)
+       (print-function nil print-function-p)
+       (include nil include-p))
+      options
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       (defstruct (,name
+                    (:conc-name ,conc-name)
+                    (:constructor ,ctor-name)
+                    ,@(mapcar (lambda (x) (cons :constructor x))
+                        constructors)
+                    ,@(when copier-p `((:copier ,copier)))
+                    ,@(when include-p `((:include ,include)))
+                    ,@(unless type-p `((:predicate ,predicate)))
+                    ,@(when print-object-p
+                        `((:print-object ,print-object)))
+                    ,@(when print-function-p
+                        `((:print-function ,print-function)))
+                    ,@(when type-p
+                        `((:type ,type))))
+         ,@(slots->defstruct-slots slots))
+       ,@(when type-p
+           `((deftype ,name ()
+               ',(if (or (eq type 'vector)
+                         (and (consp type)
+                              (eq (car type) 'vector)))
+                   (destructuring-bind
+                       (&optional (elt-type t))
+                       (rest (ensure-list type))
+                     `(simple-array ,elt-type (*)))
+                   type))
+             (defun ,predicate (object)
+               (typep object ',name)))))))
+  
+(defun make-internal-ctor-name (struct-name)
+  (intern (format nil "~a::~a::~a"
+                  (package-name *package*)
+                  struct-name
+                  'private-constructor)
+          :virgil))
+  
 (defmacro define-struct (name-and-options &rest slots)
   (let* ((name-and-options (ensure-list name-and-options))
          (name (first name-and-options))
-         (ctor-name (intern (format nil "%~a::~a-PRIVATE-CONSTRUCTOR-~a"
-                                    (package-name (symbol-package name))
-                                    name
-                                    (gensym))
-                            :virgil)))
-    (assert (and (symbolp name)
-                 (not (constantp name)))
-        (name))
-    (destructuring-bind
-        (&key constructor
-         (copier nil copier-p)
-         (conc-name (format nil "~a-" name))
-         (type nil type-p)
-         (align nil align-p)
-         (packed nil)
-         (include nil include-p)
-         (predicate (intern (format nil "~a-~a" name 'p)) predicate-p)
-         (print-object nil print-object-p)
-         (print-function nil print-function-p))
-        (flatten-options (rest name-and-options))
-      (when align-p (assert (typep align 'non-negative-fixnum) (align)))
-      (when (null conc-name)
-        (setf conc-name ""))
-      `(eval-when (:compile-toplevel :load-toplevel :execute)
-         (notice-struct-definition
-           ',name ',ctor-name ',conc-name ',(when include-p include)
-           ',(when align-p align) ',packed ',slots)
-         (declaim (inline ,ctor-name))
-         (defstruct (,name
-                      (:conc-name ,conc-name)
-                      (:constructor ,ctor-name)
-                      (:constructor ,@(ensure-list constructor))
-                      ,@(when copier-p
-                          `((:copier ,copier)))
-                      ,@(when include-p
-                          `((:include ,include)))
-                      ,@(when predicate-p
-                          `((:predicate ,predicate)))
-                      ,@(when print-object-p
-                          `((:print-object ,print-object)))
-                      ,@(when print-function-p
-                          `((:print-function ,print-function)))
-                      ,@(when type-p
-                          `((:type ,type))))
-           ,@(slots->defstruct-slots slots))
-         ,@(when type-p
-             `((deftype ,name ()
-                 ',(if (or (eq type 'vector)
-                           (and (consp type)
-                                (eq (car type) 'vector)))
-                     (destructuring-bind
-                         (&optional (elt-type t))
-                         (rest (ensure-list type))
-                       `(simple-array ,elt-type (*)))
-                     type))
-               (defun ,predicate (object)
-                 (typep object ',name))))
+         (ctor-name (make-internal-ctor-name name))
+         (options (parse-struct-options name (rest name-and-options))))
+    (check-type name symbol)
+    `(progn
+       (eval-when (:compile-toplevel :load-toplevel :execute)
          (define-type-parser ,name ()
            (gethash ',name *struct-type-hash*))
-         ',name))))
+         (notice-struct-definition ',name ',ctor-name ',options ',slots))
+       (declaim (inline ,ctor-name))
+       (%define-struct ,name ,ctor-name ,options ,@slots)
+       ',name)))
 
 (defun union-default-type (type)
   (lastcar (ensure-list (lisp-type type))))
@@ -604,104 +719,58 @@
               :collect `(,name ,(unparse-type slot-type)                               
                                :align ,align))))
 
-(defun notice-union-definition
-    (name ctor-name conc-name include align slots)
-  (setf (gethash name *union-type-hash*)
-        (let ((included (when include
-                          (or (gethash include *union-type-hash*)
-                              (error "Undefined union type: ~s"
-                                     include)))))
-          (multiple-value-bind
-              (slots size size-no-padding align)
-              (parse-union-slots included slots name align)
-            (if (every (lambda (spec &aux (type (second spec)))
-                         (or (immediate-type-p type)
-                             (primitive-type-p type)))
-                       slots)
-              (make-instance 'immediate-named-union-type
-                :name name
-                :ctor-name ctor-name
-                :conc-name conc-name
-                :include included
-                :slots slots
-                :size size
-                :size-no-padding size-no-padding
-                :align align
-                :base-type (loop :with max-type = (parse-typespec 'byte)
-                             :with max-size = 1
-                             :for (name type offs align size) :in slots
-                             :when (> size max-size) :do (setf max-size size
-                                                               max-type type)
-                             :finally (return max-type)))
-              (make-instance 'named-union-type
-                :name name
-                :ctor-name ctor-name
-                :conc-name conc-name
-                :size size
-                :include included
-                :size-no-padding size-no-padding
-                :align align
-                :slots slots))))))
+(defun notice-union-definition (name ctor-name options slots)
+  (let ((conc-name (getf options :conc-name))
+        (include (getf options :include))
+        (align (getf options :align)))
+    (setf (gethash name *union-type-hash*)
+          (let ((included (when include
+                            (or (gethash include *union-type-hash*)
+                                (error "Undefined union type: ~s"
+                                       include)))))
+            (multiple-value-bind
+                (slots size size-no-padding align)
+                (parse-union-slots included slots name align)
+              (if (every (lambda (spec &aux (type (second spec)))
+                           (or (immediate-type-p type)
+                               (primitive-type-p type)))
+                         slots)
+                (make-instance 'immediate-named-union-type
+                  :name name
+                  :ctor-name ctor-name
+                  :conc-name conc-name
+                  :include included
+                  :slots slots
+                  :size size
+                  :size-no-padding size-no-padding
+                  :align align
+                  :base-type (loop :with max-type = (parse-typespec 'byte)
+                               :with max-size = 1
+                               :for (name type offs align size) :in slots
+                               :when (> size max-size) :do (setf max-size size
+                                                                 max-type type)
+                               :finally (return max-type)))
+                (make-instance 'named-union-type
+                  :name name
+                  :ctor-name ctor-name
+                  :conc-name conc-name
+                  :size size
+                  :include included
+                  :size-no-padding size-no-padding
+                  :align align
+                  :slots slots)))))))
 
 (defmacro define-union (name-and-options &rest slots)
   (let* ((name-and-options (ensure-list name-and-options))
          (name (first name-and-options))
-         (ctor-name (intern (format nil "%~a::~a-PRIVATE-CONSTRUCTOR-~a"
-                                    (package-name (symbol-package name))
-                                    name
-                                    (gensym))
-                            :virgil)))
-    (assert (and (symbolp name)
-                 (not (constantp name)))
-        (name))
-    (destructuring-bind
-        (&key constructor
-         (copier nil copier-p)
-         (conc-name (format nil "~a-" name))
-         (type nil type-p)
-         (align nil align-p)
-         (include nil include-p)
-         (predicate (intern (format nil "~a-~a" name 'p)) predicate-p)
-         (print-object nil print-object-p)
-         (print-function nil print-function-p))
-        (flatten-options (rest name-and-options))
-      (when align-p (assert (typep align 'non-negative-fixnum) (align)))
-      (when (null conc-name)
-        (setf conc-name ""))
-      `(eval-when (:compile-toplevel :load-toplevel :execute)
-         (notice-union-definition
-           ',name ',ctor-name ',conc-name ',(when include-p include)
-           ',(when align-p align) ',slots)
-         (declaim (inline ,ctor-name))
-         (defstruct (,name
-                      (:conc-name ,conc-name)
-                      (:constructor ,ctor-name)
-                      (:constructor ,@(ensure-list constructor))
-                      ,@(when copier-p
-                          `((:copier ,copier)))
-                      ,@(when include-p
-                          `((:include ,include)))
-                      ,@(when predicate-p
-                          `((:predicate ,predicate)))
-                      ,@(when print-object-p
-                          `((:print-object ,print-object)))
-                      ,@(when print-function-p
-                          `((:print-function ,print-function)))
-                      ,@(when type-p
-                          `((:type ,type))))
-           ,@(slots->defstruct-slots slots))
-         ,@(when type-p
-             `((deftype ,name ()
-                 ',(if (or (eq type 'vector)
-                           (and (consp type)
-                                (eq (car type) 'vector)))
-                     (destructuring-bind
-                         (&optional (elt-type t))
-                         (rest (ensure-list type))
-                       `(simple-array ,elt-type (*)))
-                     type))
-               (defun ,predicate (object)
-                 (typep object ',name))))
+         (ctor-name (make-internal-ctor-name name))
+         (options (parse-struct-options name (rest name-and-options))))
+    (check-type name symbol)
+    `(progn
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (notice-union-definition ',name ',ctor-name ',options ',slots)
          (define-type-parser ,name ()
-           (gethash ',name *union-type-hash*))
-         ',name))))
+           (gethash ',name *struct-type-hash*)))
+       (declaim (inline ,ctor-name))
+       (%define-struct ,name ,ctor-name ,options ,@slots)
+       ',name)))

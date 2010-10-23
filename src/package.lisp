@@ -146,6 +146,11 @@
     #:with-pointers
     #:with-value
     #:with-values
+    #:enable-circular-references
+    #:disable-circular-references
+    #:clear-circular-reference-cache
+    #:with-circular-references
+    #:without-circular-references
     
     ;;sequence and array stuff
     #:sequence

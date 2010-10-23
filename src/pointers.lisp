@@ -99,11 +99,12 @@
 (define-compiler-macro deref (pointer type &optional (offset 0) output)
   (multiple-value-bind
       (type constantp) (eval-if-constantp type)
-    (if constantp
-      (expand-read-value `(&+ ,pointer ,offset) output
-                         (parse-typespec type))
-      `(read-value (&+ ,pointer ,offset) ,output
-                   (parse-typespec ,type)))))
+    `(progn
+       ,(if constantp
+          (expand-read-value `(&+ ,pointer ,offset) output
+                             (parse-typespec type))
+          `(read-value (&+ ,pointer ,offset) ,output
+                       (parse-typespec ,type))))))
 
 (defun (setf deref) (value pointer type &optional (offset 0))
   (declare (type pointer pointer)
@@ -113,11 +114,12 @@
 (define-compiler-macro (setf deref) (value pointer type &optional (offset 0))
   (multiple-value-bind
       (type constantp) (eval-if-constantp type)
-    (if constantp
-      (expand-write-value value `(&+ ,pointer ,offset)
-                          (parse-typespec type))
-      `(write-value ,value (&+ ,pointer ,offset)
-                    (parse-typespec ,type)))))
+    `(progn
+       ,(if constantp
+          (expand-write-value value `(&+ ,pointer ,offset)
+                              (parse-typespec type))
+          `(write-value ,value (&+ ,pointer ,offset)
+                        (parse-typespec ,type))))))
 
 (declaim (inline align-offset))
 (defun align-offset (offset align)
@@ -130,3 +132,123 @@
       (let* ((padding (the size-t (- align r)))
              (new-offset (the size-t (+ offset padding))))
         new-offset))))
+
+(defmethod allocate-value :around (value (type translatable-type))
+  (if (and *handle-cycles* (not (immediate-type-p type)))
+    (or (cdr (assoc value *allocated-values* :test #'eq))
+        (cdr (assoc value *written-values* :test #'eq))
+        (let ((pointer (call-next-method)))
+          (push (cons value pointer) *allocated-values*)
+          pointer))
+    (call-next-method)))
+
+(defmethod write-value :around (value pointer (type translatable-type))
+  (if (and *handle-cycles* (not (immediate-type-p type)))
+    (let ((cell (assoc value *written-values* :test #'eq)))
+      (if cell
+        (car cell)
+        (progn (push (cons value pointer) *written-values*)
+               (call-next-method))))
+    (call-next-method)))
+
+(defmethod read-value :around (pointer out (type translatable-type))
+  (if (and *handle-cycles* (not (immediate-type-p type)))
+    (or (cdr (assoc pointer *readen-values* :test #'&=))
+        (let ((out (or out (prototype type))))
+          (push (cons pointer out) *readen-values*)
+          (call-next-method pointer out type)))
+    (call-next-method)))
+
+(defmethod clean-value :around (pointer value (type translatable-type))
+  (if (and *handle-cycles* (not (immediate-type-p type)))
+    (unless (member pointer *cleaned-values* :test #'&=)
+      (push pointer *cleaned-values*)
+      (call-next-method))
+    (call-next-method)))
+
+(defmethod free-value :around (pointer (type translatable-type))
+  (if (and *handle-cycles* (not (immediate-type-p type)))
+    (unless (member pointer *deallocated-values* :test #'&=)
+      (push pointer *deallocated-values*)
+      (call-next-method))
+    (call-next-method)))
+
+(defmethod expand-allocate-value :around (value-form (type translatable-type))
+  (with-gensyms (value pointer)
+    `(let ((,value ,value-form))
+       (declare (type ,(lisp-type type) ,value))
+       (if *handle-cycles*
+         (or (cdr (assoc ,value *allocated-values* :test #'eq))
+             (cdr (assoc ,value *written-values* :test #'eq))
+             (let ((,pointer ,(call-next-method value type)))
+               (push (cons ,value ,pointer) *allocated-values*)
+               ,pointer))
+         ,(call-next-method value type)))))
+
+(defmethod expand-write-value :around
+  (value-form pointer-form (type translatable-type))
+  (if (immediate-type-p type)
+    (call-next-method)
+    (with-gensyms (pointer value cell)
+      `(let ((,pointer ,pointer-form) (,value ,value-form))
+         (declare (type pointer ,pointer)
+                  (type ,(lisp-type type) ,value))
+         (if *handle-cycles*
+           (let ((,cell (assoc ,value *written-values* :test #'eq)))
+             (if ,cell
+               (car ,cell)
+               (progn (push (cons ,value ,pointer) *written-values*)
+                      ,(call-next-method value pointer type))))
+           ,(call-next-method value pointer type))))))
+
+(defmethod expand-read-value :around
+  (pointer-form out-form (type translatable-type))
+  (if (immediate-type-p type)
+    (call-next-method)
+    (with-gensyms (pointer out)
+      `(let ((,pointer ,pointer-form) (,out ,out-form))
+         (declare (type pointer ,pointer))
+         (if *handle-cycles*
+           (or (cdr (assoc ,pointer *readen-values* :test #'&=))
+               (let ((,out (or ,out ,(expand-prototype type))))
+                 (declare (type ,(lisp-type type) ,out))
+                 (push (cons ,pointer ,out) *readen-values*)
+                 ,(call-next-method pointer out type)))
+           ,(call-next-method pointer out type))))))
+
+(defmethod expand-clean-value :around
+  (pointer-form value-form (type translatable-type))
+  (if (immediate-type-p type)
+    (call-next-method)
+    (with-gensyms (pointer value)
+      `(let ((,pointer ,pointer-form) (,value ,value-form))
+         (declare (type ,(lisp-type type) ,value)
+                  (type pointer ,pointer))
+         (if *handle-cycles*
+           (unless (member ,pointer *cleaned-values* :test #'&=)
+             (push ,pointer *cleaned-values*)
+             ,(call-next-method pointer value type))
+           ,(call-next-method pointer value type))))))
+
+(defmethod expand-free-value :around (pointer-form (type translatable-type))
+  (if (immediate-type-p type)
+    (call-next-method)
+    (with-gensyms (pointer)
+      `(let ((,pointer ,pointer-form))
+         (declare (type pointer ,pointer))
+         (if *handle-cycles*
+           (unless (member ,pointer *deallocated-values* :test #'&=)
+             (push ,pointer *deallocated-values*)
+             ,(call-next-method pointer type))
+           ,(call-next-method pointer type))))))
+
+(defmethod expand-reference-dynamic-extent :around
+  (var size-var value-var body mode (type translatable-type))
+  (if (immediate-type-p type)
+    (call-next-method)
+    `(let ((*readen-values* '())
+           (*written-values* '())
+           (*allocated-values* '())
+           (*cleaned-values* '())
+           (*deallocated-values* '()))
+       ,(call-next-method))))

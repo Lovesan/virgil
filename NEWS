@@ -1,3 +1,29 @@
+v0.5.0
+    * new feature: Recursive data structures.
+        Named structure types can now hold references to themselves
+        in their slots.
+        ** Notice, that recursive data _types_(those defined with defalias)
+           are not allowed. The reasons for this are quite complex, but one of
+           them is that our type system is very similiar to that of CL.
+    * new feature: Circular reference handling.
+        Virgil is now able to read circular structures from memory,
+        write this kind of structures into it, and so on.
+        However, the process of tracing circular references
+        has significant performance impact, and because of this,
+        is disabled by default and requires explicit activation by means
+        of those macros and functions:
+        ** WITH-CIRCULAR-REFERENCES locally enables circular reference tracing
+        ** WITHOUT-CIRCULAR-REFERENCES locally disables tracing
+        ** ENABLE-CIRCULAR-REFERENCES enables tracing of circular references
+            in current dynamic environment (either global or established by
+            the macros described above)
+        ** DISABLE-CIRCULAR-REFERENCES disables tracing of circular references
+            in current dynamic environment
+        ** CLEAR-CIRCULAR-REFERENCE-CACHE clears internal cache in current
+            dynamic environment
+    * improvement: Structures are now more defstruct-like: they can have
+        more than one constructor.
+
 v0.4.0
     * bug fix: Named enums were treated as aggregate types
     * incompatible changes: All types were reorganized into new hierarchy:

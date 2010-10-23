@@ -1,11 +1,12 @@
 BITFIELDS
     Uhm... Ok, but who uses bitfields, anyway?
 
-RECURSIVE TYPES
-    Particulary, reference types of structure slots. For now, it is not
-    allowed for a slot type, even reference type, to be of
-    structure type being defined, because EXPAND-* core generics, and
-    probably even their run-time analogues, will hang while operating on them.
+CONSTANTS
+    Well, something like CONST proxy type, values of which are never allocated
+    more than once.
+
+USER-DEFINED READERS/WRITERS/CLEANERS/DEALLOCATORS FOR STRUCTS
+    More flexibility, you know.
 
 BY-VALUE PASSAGE OF AGGREGATE TYPE FUNCTION PARAMETERS
     Well, this is obvious that most CL implementations do not allow

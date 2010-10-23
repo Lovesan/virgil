@@ -204,8 +204,8 @@
                    string start end pointer bom-len)
           (when (null byte-length)
             (dotimes (i nt-len)
-              (setf (deref pointer 'uint8 (+ bom-len data-len i)) 0)))
-          pointer)))))
+              (setf (deref pointer 'uint8 (+ bom-len data-len i)) 0)))))))
+  string)
 
 (defun allocate-cstring (string &key (encoding :ascii)
                                 (start 0)

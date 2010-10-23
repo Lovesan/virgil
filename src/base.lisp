@@ -373,6 +373,64 @@
     (values (eval x) T)
     (values x nil)))
 
+
+(defvar *handle-cycles* nil)
+(defvar *allocated-values*)
+(defvar *written-values*)
+(defvar *readen-values*)
+(defvar *cleaned-values*)
+(defvar *deallocated-values*)
+
+(defun enable-circular-references ()
+  (setf *handle-cycles* t
+        *allocated-values* '()
+        *written-values* '()
+        *readen-values* '()
+        *cleaned-values* '()
+        *deallocated-values* '())
+  nil)
+
+(defun disable-circular-references ()
+  (setf *handle-cycles* nil)
+  (makunbound '*allocated-values*)
+  (makunbound '*written-values*)
+  (makunbound '*readen-values*)
+  (makunbound '*cleaned-values*)
+  (makunbound '*deallocated-values*)
+  nil)
+
+(defun clear-circular-reference-cache ()
+  (setf *allocated-values* '()
+        *written-values* '()
+        *readen-values* '()
+        *cleaned-values* '()
+        *deallocated-values* '())
+  nil)
+
+(defmacro with-circular-references (&body body)
+  `(progv '(*handle-cycles*
+            *allocated-values*
+            *written-values*
+            *readen-values*
+            *cleaned-values*
+            *deallocated-values*)
+          '(T () () () () ())
+     (locally
+       (declare (type (eql T) *handle-cycles*))
+       ,@body)))
+
+(defmacro without-circular-references (&body body)
+  `(progv '(*handle-cycles*
+            *allocated-values*
+            *written-values*
+            *readen-values*
+            *cleaned-values*
+            *deallocated-values*)
+          '(nil)
+     (locally
+       (declare (type (eql nil) *handle-cycles*))
+       ,@body)))
+
 (defun alloc (type &optional (value nil value-p))
   (let* ((type (parse-typespec type))
          (value (if value-p value (prototype type)))
@@ -388,13 +446,14 @@
     (if constantp
       (let ((type (parse-typespec type-form)))
         (with-gensyms (value pointer)
-          `(let* ((,value ,(if value-p
-                             value-form
-                             (expand-prototype type)))
-                  (,pointer ,(expand-allocate-value value type)))
-             (declare (type pointer ,pointer))
-             ,(expand-write-value value pointer type)
-             ,pointer)))
+          `(progn
+             (let* ((,value ,(if value-p
+                               value-form
+                               (expand-prototype type)))
+                    (,pointer ,(expand-allocate-value value type)))
+               (declare (type pointer ,pointer))
+               ,(expand-write-value value pointer type)
+               ,pointer))))
       form)))
 
 (defun free (pointer type)
@@ -405,7 +464,8 @@
   (multiple-value-bind
       (type constantp) (eval-if-constantp type)
     (if constantp
-      (expand-free-value pointer (parse-typespec type))
+      `(progn
+         ,(expand-free-value pointer (parse-typespec type)))
       form)))
 
 (defun clean (pointer value type)
@@ -416,7 +476,8 @@
   (multiple-value-bind
       (type constantp) (eval-if-constantp type)
     (if constantp
-      (expand-clean-value pointer value (parse-typespec type))
+      `(progn
+         ,(expand-clean-value pointer value (parse-typespec type)))
       form)))
 
 (defun clean-and-free (pointer value type)
@@ -476,9 +537,10 @@
 (define-compiler-macro convert (lisp-value type)
   (multiple-value-bind
       (type constantp) (eval-if-constantp type)
-    (if constantp
-      (expand-convert-value lisp-value (parse-typespec type))
-      `(convert-value ,lisp-value (parse-typespec ,type)))))
+    `(progn
+       ,(if constantp
+          (expand-convert-value lisp-value (parse-typespec type))
+          `(convert-value ,lisp-value (parse-typespec ,type))))))
 
 (defun translate (raw-value type)
   (translate-value raw-value (parse-typespec type)))
@@ -486,9 +548,10 @@
 (define-compiler-macro translate (raw-value type)
   (multiple-value-bind
       (type constantp) (eval-if-constantp type)
-    (if constantp
-      (expand-translate-value raw-value (parse-typespec type))
-      `(translate-value ,raw-value (parse-typespec ,type)))))
+   `(progn
+      ,(if constantp
+         (expand-translate-value raw-value (parse-typespec type))
+         `(translate-value ,raw-value (parse-typespec ,type))))))
 
 (defun flatten-options (options)
   (loop :with parsed = '()
