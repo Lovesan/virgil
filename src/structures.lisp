@@ -27,6 +27,13 @@
 (defvar *struct-type-hash* (make-hash-table :test #'eq))
 (defvar *union-type-hash* (make-hash-table :test #'eq))
 
+(defun valid-function-name-p (name)
+  (or (symbolp name)
+      (and (proper-list-p name)
+           (= 2 (length name))
+           (eq 'setf (first name))
+           (symbolp (second name)))))
+
 (define-translatable-type struct-type ()
   ((slots :initform nil
           :initarg :slots
@@ -39,7 +46,22 @@
                     :reader struct-size-no-padding)
    (align :initform 1
           :initarg :align
-          :reader struct-align))
+          :reader struct-align)
+   (allocator :initform nil
+              :initarg :allocator
+              :reader struct-allocator)
+   (reader :initform nil
+           :initarg :reader
+           :reader struct-reader)
+   (writer :initform nil
+           :initarg :writer
+           :reader struct-writer)
+   (cleaner :initform nil
+            :initarg :cleaner
+            :reader struct-cleaner)
+   (deallocator :initform nil
+                :initarg :deallocator
+                :reader struct-deallocator))
   (:lisp-type (type) 'hash-table)
   (:prototype (type)
     (let ((ht (make-hash-table :test #'eq)))
@@ -57,65 +79,89 @@
   (:fixed-size (type) (struct-size type))
   (:align (type) (struct-align type))
   (:reader (pointer out type)
-    (let* ((result (or out (prototype type))))
-      (declare (type hash-table result))
-      (loop :for (name slot-type offset) :in (struct-slots type)
-        :do (setf (gethash name result)
-                  (read-value (&+ pointer offset)
-                              (gethash name result)
-                              slot-type)))
-      result))
+    (if (struct-reader type)
+      (funcall (fdefinition (struct-reader type)) pointer out)
+      (let* ((result (or out (prototype type))))
+        (declare (type hash-table result))
+        (loop :for (name slot-type offset) :in (struct-slots type)
+          :do (setf (gethash name result)
+                    (read-value (&+ pointer offset)
+                                (gethash name result)
+                                slot-type)))
+        result)))
   (:reader-expansion (pointer out type)
-    (with-gensyms (result)
-      (once-only (pointer out)
-        `(let ((,result (or ,out ,(expand-prototype type))))
-           (declare (type hash-table ,result)
-                    (type pointer ,pointer))
-           ,@(loop :for (name slot-type offset) :in (struct-slots type)
-               :collect `(setf (gethash ',name ,result)
-                               ,(expand-read-value
-                                  `(&+ ,pointer ,offset)
-                                  `(gethash ',name ,result)
-                                  slot-type)))
-           ,result))))
+    (if (struct-reader type)
+      `(funcall #',(struct-reader type) ,pointer ,out)
+      (with-gensyms (result)
+        (once-only (pointer out)
+          `(let ((,result (or ,out ,(expand-prototype type))))
+             (declare (type hash-table ,result)
+                      (type pointer ,pointer))
+             ,@(loop :for (name slot-type offset) :in (struct-slots type)
+                 :collect `(setf (gethash ',name ,result)
+                                 ,(expand-read-value
+                                    `(&+ ,pointer ,offset)
+                                    `(gethash ',name ,result)
+                                    slot-type)))
+             ,result)))))
   (:writer (value pointer type)
-    (loop :for (name slot-type offset) :in (struct-slots type)
-      :do (write-value (gethash name value)
-                       (&+ pointer offset)
-                       slot-type))
-    pointer)
+    (if (struct-writer type)
+      (funcall (fdefinition (struct-writer type)) value pointer)
+      (loop :for (name slot-type offset) :in (struct-slots type)
+        :do (write-value (gethash name value)
+                         (&+ pointer offset)
+                         slot-type)
+        :finally (return value))))
   (:writer-expansion (value-form pointer-form type)
-    (with-gensyms (pointer value)
-      `(let ((,pointer ,pointer-form)
-             (,value ,value-form))
-         (declare (type pointer ,pointer)
-                  (type hash-table ,value))
-         ,@(loop :for (name slot-type offset) :in (struct-slots type)
-             :collect (expand-write-value
-                        `(gethash ',name ,value)
-                        `(&+ ,pointer ,offset)
-                        slot-type))
-         ,pointer)))
+    (if (struct-writer type)
+      `(funcall #',(struct-writer type) ,value-form ,pointer-form)
+      (with-gensyms (pointer value)
+        `(let ((,pointer ,pointer-form)
+               (,value ,value-form))
+           (declare (type pointer ,pointer)
+                    (type hash-table ,value))
+           ,@(loop :for (name slot-type offset) :in (struct-slots type)
+               :collect (expand-write-value
+                          `(gethash ',name ,value)
+                          `(&+ ,pointer ,offset)
+                          slot-type))
+           ,value))))
   (:cleaner (pointer value type)
-    (loop :for (name slot-type offset) :in (struct-slots type)
-      :do (clean-value (&+ pointer offset)
+    (if (struct-cleaner type)
+      (funcall (fdefinition (struct-cleaner type)) pointer value)
+      (loop :for (name slot-type offset) :in (struct-slots type)
+        :do (clean-value (&+ pointer offset)
                          (gethash name value)
-                         slot-type)))
+                         slot-type))))
   (:cleaner-expansion (pointer-form value-form type)
-    (with-gensyms (pointer value)
-      `(let ((,pointer ,pointer-form) (,value ,value-form))
-         (declare (type pointer ,pointer)
-                  (type hash-table ,value)
-                  (ignorable ,pointer ,value))
-         ,@(loop :for (name slot-type offset) :in (struct-slots type)
-             :collect (expand-clean-value
-                        `(& ,pointer ,offset)
-                        `(gethash ',name ,value)
-                        slot-type)))))
+    (if (struct-cleaner type)
+      `(funcall #',(struct-cleaner type) ,pointer-form ,value-form)
+      (with-gensyms (pointer value)
+        `(let ((,pointer ,pointer-form) (,value ,value-form))
+           (declare (type pointer ,pointer)
+                    (type hash-table ,value)
+                    (ignorable ,pointer ,value))
+           ,@(loop :for (name slot-type offset) :in (struct-slots type)
+               :collect (expand-clean-value
+                          `(& ,pointer ,offset)
+                          `(gethash ',name ,value)
+                          slot-type))))))
+  (:allocator (value type)
+    (if (struct-allocator type)
+      (funcall (fdefinition (struct-allocator type)) value)
+      (foreign-alloc :uint8 :count (compute-fixed-size type))))
   (:allocator-expansion (value type)
-   `(foreign-alloc :uint8 :count ,(compute-fixed-size type)))
+    (if (struct-allocator type)
+      `(funcall #',(struct-allocator type) ,value)
+      `(foreign-alloc :uint8 :count ,(compute-fixed-size type))))
+  (:deallocator (pointer type)
+    (if (struct-deallocator type)
+      (funcall (fdefinition (struct-deallocator type)) pointer)
+      (foreign-free pointer)))
   (:deallocator-expansion (pointer type)
-   `(foreign-free ,pointer))
+    (if (struct-deallocator type)
+      `(funcall #',(struct-deallocator type) ,pointer)
+      `(foreign-free ,pointer)))
   (:slot-offset (member-name type)
     (check-type member-name symbol)
     (loop :for (slot-name slot-type slot-offset)
@@ -174,40 +220,48 @@
   (:prototype-expansion (type)
     `(,(struct-ctor-name type)))
   (:reader (pointer out type)
-    (let* ((result (or out (prototype type)))
-           (conc-name (struct-conc-name type)))
-      (when (struct-included type)
-        (read-value pointer result (struct-included type)))
-      (loop :for (slot-name slot-type offset) :in (struct-slots type)
-        :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                                (struct-package type))
-        :do (funcall (fdefinition `(setf ,accessor))
-                     (read-value (&+ pointer offset)
-                                 (funcall accessor result)
-                                 slot-type)
-                     result))
-      result))
+    (if (struct-reader type)
+      (funcall (fdefinition (struct-reader type)) pointer out)
+      (let* ((result (or out (prototype type)))
+             (conc-name (struct-conc-name type)))
+        (when (struct-included type)
+          (read-value pointer result (struct-included type)))
+        (loop :for (slot-name slot-type offset) :in (struct-slots type)
+          :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                  (struct-package type))
+          :do (funcall (fdefinition `(setf ,accessor))
+                       (read-value (&+ pointer offset)
+                                   (funcall accessor result)
+                                   slot-type)
+                       result))
+        result)))
   (:writer (value pointer type)
-    (when (struct-included type)
-      (write-value value pointer (struct-included type)))
-    (loop :with conc-name = (struct-conc-name type)
+    (if (struct-writer type)
+      (funcall (fdefinition (struct-writer type)) value pointer)
+      (progn
+        (when (struct-included type)
+          (write-value value pointer (struct-included type)))
+        (loop :with conc-name = (struct-conc-name type)
           :for (slot-name slot-type offset) :in (struct-slots type)
           :for accessor = (intern (format nil "~a~a" conc-name slot-name)
                                   (struct-package type))
           :do (write-value (funcall accessor value)
                            (&+ pointer offset)
                            slot-type))
-    value)
+        value)))
   (:cleaner (pointer value type)
-    (when (struct-included type)
-      (clean-value pointer value (struct-included type)))
-    (loop :with conc-name = (struct-conc-name type)
+    (if (struct-cleaner type)
+      (funcall (fdefinition (struct-cleaner type)) pointer value)
+      (progn
+        (when (struct-included type)
+          (clean-value pointer value (struct-included type)))
+        (loop :with conc-name = (struct-conc-name type)
           :for (slot-name slot-type offset) :in (struct-slots type)
           :for accessor = (intern (format nil "~a~a" conc-name slot-name)
                                   (struct-package type))
           :do (clean-value (&+ pointer offset)
                            (funcall accessor value)
-                           slot-type))))
+                           slot-type))))))
 
 (defun make-reader-name (type)
   (intern (format nil "~a::~a::~a"
@@ -227,79 +281,85 @@
   (intern (format nil "~a::~a::~a"
                   (package-name *package*)
                   (struct-name type)
-                  'writer)
+                  'cleaner)
           :virgil))
 
 (defmethod expand-read-value (pointer-form out-form (type named-struct-type))
-  (let ((reader (make-reader-name type)))
-    (if (find (struct-name type) *readen-struct-types*)
-      `(,reader ,pointer-form ,out-form)
-      (let ((*readen-struct-types* (cons (struct-name type)
-                                         *readen-struct-types*)))
-        (with-gensyms (result pointer out)
-          `(labels ((,reader (,pointer ,out)
-                      (declare (type pointer ,pointer))
-                      (let* ((,result (or ,out ,(expand-prototype type))))
-                        (declare (type ,(lisp-type type) ,result))
+  (if (struct-reader type)
+    `(funcall #',(struct-reader type) ,pointer-form ,out-form)
+    (let ((reader (make-reader-name type)))
+      (if (find (struct-name type) *readen-struct-types*)
+        `(,reader ,pointer-form ,out-form)
+        (let ((*readen-struct-types* (cons (struct-name type)
+                                           *readen-struct-types*)))
+          (with-gensyms (result pointer out)
+            `(labels ((,reader (,pointer ,out)
+                        (declare (type pointer ,pointer))
+                        (let* ((,result (or ,out ,(expand-prototype type))))
+                          (declare (type ,(lisp-type type) ,result))
+                          ,(when (struct-included type)
+                             (expand-read-value pointer result (struct-included type)))
+                          ,@(loop :with conc-name = (struct-conc-name type)
+                              :for (slot-name slot-type offset) :in (struct-slots type)
+                              :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                                      (struct-package type))
+                              :collect `(setf (,accessor ,result)
+                                              ,(expand-read-value
+                                                 `(&+ ,pointer ,offset)
+                                                 `(,accessor ,result)
+                                                 slot-type)))
+                          ,result)))
+               (,reader ,pointer-form ,out-form))))))))
+
+(defmethod expand-write-value (value-form pointer-form (type named-struct-type))
+  (if (struct-writer type)
+    `(funcall #',(struct-writer type) ,value-form ,pointer-form)
+    (let ((writer (make-writer-name type)))
+      (if (find (struct-name type) *written-struct-types*)
+        `(,writer ,value-form ,pointer-form)
+        (let ((*written-struct-types* (cons (struct-name type)
+                                            *written-struct-types*)))
+          (with-gensyms (pointer value)
+            `(labels ((,writer (,value ,pointer)
+                        (declare (type pointer ,pointer)
+                                 (type ,(lisp-type type) ,value))
                         ,(when (struct-included type)
-                           (expand-read-value pointer result (struct-included type)))
+                           (expand-write-value value pointer (struct-included type)))
                         ,@(loop :with conc-name = (struct-conc-name type)
                             :for (slot-name slot-type offset) :in (struct-slots type)
                             :for accessor = (intern (format nil "~a~a" conc-name slot-name)
                                                     (struct-package type))
-                            :collect `(setf (,accessor ,result)
-                                            ,(expand-read-value
-                                               `(&+ ,pointer ,offset)
-                                               `(,accessor ,result)
-                                               slot-type)))
-                        ,result)))
-             (,reader ,pointer-form ,out-form)))))))
-
-(defmethod expand-write-value (value-form pointer-form (type named-struct-type))
-  (let ((writer (make-writer-name type)))
-    (if (find (struct-name type) *written-struct-types*)
-      `(,writer ,value-form ,pointer-form)
-      (let ((*written-struct-types* (cons (struct-name type)
-                                          *written-struct-types*)))
-        (with-gensyms (pointer value)
-          `(labels ((,writer (,value ,pointer)
-                      (declare (type pointer ,pointer)
-                               (type ,(lisp-type type) ,value))
-                      ,(when (struct-included type)
-                         (expand-write-value value pointer (struct-included type)))
-                      ,@(loop :with conc-name = (struct-conc-name type)
-                          :for (slot-name slot-type offset) :in (struct-slots type)
-                          :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                                                  (struct-package type))
-                          :collect (expand-write-value
-                                     `(,accessor ,value)
-                                     `(&+ ,pointer ,offset)
-                                     slot-type))
-                      ,value))
-             (,writer ,value-form ,pointer-form)))))))
+                            :collect (expand-write-value
+                                       `(,accessor ,value)
+                                       `(&+ ,pointer ,offset)
+                                       slot-type))
+                        ,value))
+               (,writer ,value-form ,pointer-form))))))))
 
 (defmethod expand-clean-value (pointer-form value-form (type named-struct-type))
-  (let ((cleaner (make-cleaner-name type)))
-    (if (find (struct-name type) *cleaned-struct-types*)
-      `(,cleaner ,pointer-form ,value-form)
-      (let ((*cleaned-struct-types* (cons (struct-name type)
-                                          *cleaned-struct-types*)))
-        (with-gensyms (pointer value)
-          `(labels ((,cleaner (,pointer ,value)
-                      (declare (type pointer ,pointer)
-                               (type ,(lisp-type type) ,value)
-                               (ignorable ,value))                        
-                      ,(when (struct-included type)
-                         (expand-clean-value pointer value (struct-included type)))
-                      ,@(loop :with conc-name = (struct-conc-name type)
-                          :for (slot-name slot-type offset) :in (struct-slots type)
-                          :for accessor = (intern (format nil "~a~a" conc-name slot-name)
-                                                  (struct-package type))
-                          :collect (expand-clean-value
-                                     `(&+ ,pointer ,offset)
-                                     `(,accessor ,value)
-                                     slot-type))))
-             (,cleaner ,pointer-form ,value-form)))))))
+  (if (struct-cleaner type)
+    `(funcall #',(struct-cleaner type) ,pointer-form ,value-form)
+    (let ((cleaner (make-cleaner-name type)))
+      (if (find (struct-name type) *cleaned-struct-types*)
+        `(,cleaner ,pointer-form ,value-form)
+        (let ((*cleaned-struct-types* (cons (struct-name type)
+                                            *cleaned-struct-types*)))
+          (with-gensyms (pointer value)
+            `(labels ((,cleaner (,pointer ,value)
+                        (declare (type pointer ,pointer)
+                                 (type ,(lisp-type type) ,value)
+                                 (ignorable ,value))                        
+                        ,(when (struct-included type)
+                           (expand-clean-value pointer value (struct-included type)))
+                        ,@(loop :with conc-name = (struct-conc-name type)
+                            :for (slot-name slot-type offset) :in (struct-slots type)
+                            :for accessor = (intern (format nil "~a~a" conc-name slot-name)
+                                                    (struct-package type))
+                            :collect (expand-clean-value
+                                       `(&+ ,pointer ,offset)
+                                       `(,accessor ,value)
+                                       slot-type))))
+               (,cleaner ,pointer-form ,value-form))))))))
   
 (defun parse-struct-slots (included slots named align-supplied packed)
   (loop :with current-offset = (if included
@@ -355,8 +415,14 @@
 
 (define-type-parser struct (options &rest slots)
   (destructuring-bind
-      (&key align packed) options
+      (&key align packed allocator deallocator reader writer cleaner)
+      options
     (check-type align (or null positive-fixnum))
+    (assert (valid-function-name-p allocator) (allocator))
+    (assert (valid-function-name-p deallocator) (deallocator))
+    (assert (valid-function-name-p reader) (reader))
+    (assert (valid-function-name-p writer) (writer))
+    (assert (valid-function-name-p cleaner) (cleaner))
     (multiple-value-bind
         (slots size size-no-padding align)
         (parse-struct-slots nil slots nil align packed)
@@ -364,10 +430,20 @@
         :slots slots
         :size size
         :size-no-padding size-no-padding
-        :align align))))
+        :align align
+        :allocator (if (eq allocator :default) nil allocator)
+        :deallocator (if (eq deallocator :default) nil deallocator)
+        :reader (if (eq reader :default) nil reader)
+        :writer (if (eq writer :default) nil writer)
+        :cleaner (if (eq cleaner :default) nil cleaner)))))
 
 (defmethod unparse-type ((type struct-type))
-  `(struct (:align ,(struct-align type))
+  `(struct (:align ,(struct-align type)
+            :allocator ,(or (struct-allocator type) :default)
+            :deallocator ,(or (struct-deallocator type) :default)
+            :reader ,(or (struct-reader type) :default)
+            :writer ,(or (struct-writer type) :default)
+            :cleaner ,(or (struct-cleaner type) :default))
            ,@(loop :for (name slot-type offset align)
                :in (struct-slots type)
                :collect `(,name ,(unparse-type slot-type)
@@ -378,26 +454,30 @@
   (struct-name type))
 
 (defun notice-struct-definition (name ctor-name options slots)
-  (let ((conc-name (getf options :conc-name))
-        (include (getf options :include))
+  (let ((include (getf options :include))
         (align (getf options :align))
         (packed (getf options :packed)))
-    (let ((included (when include
-                      (or (gethash include *struct-type-hash*)
-                          (error "Undefined structure type: ~s"
-                                 include))))
-          (type (setf (gethash name *struct-type-hash*)
-                      (make-instance 'named-struct-type))))
+    (let* ((included (when include
+                       (or (gethash include *struct-type-hash*)
+                           (error "Undefined structure type: ~s"
+                                  include))))
+           (type (setf (gethash name *struct-type-hash*)
+                       (make-instance 'named-struct-type
+                         :name name
+                         :include included
+                         :ctor-name ctor-name
+                         :conc-name (getf options :conc-name)
+                         :allocator (getf options :allocator)
+                         :deallocator (getf options :deallocator)
+                         :reader (getf options :reader)
+                         :writer (getf options :writer)
+                         :cleaner (getf options :cleaner)))))
       (multiple-value-bind
           (slots size size-no-padding align)
           (parse-struct-slots included slots name align packed)
-        (setf (slot-value type 'name) name
-              (slot-value type 'ctor-name) ctor-name
-              (slot-value type 'conc-name) conc-name
-              (slot-value type 'size-no-padding) size-no-padding              
+        (setf (slot-value type 'size-no-padding) size-no-padding              
               (slot-value type 'size) size
               (slot-value type 'align) align
-              (slot-value type 'included) included
               (slot-value type 'slots) slots))))
   nil)
   
@@ -438,6 +518,56 @@
                                      (cons name rest)))
                             (push (cons name (if args-p (list args) '()))
                                   (getf options :constructors))))
+            (:allocator (destructuring-bind
+                            (allocator-name) rest                          
+                          (assert (valid-function-name-p allocator-name)
+                              (allocator-name)
+                            "Invalid function name: ~s" allocator-name)
+                          (assert-not-duplicate-option :allocator options unparsed)
+                          (setf (getf options :allocator)
+                                (if (eq allocator-name :default)
+                                  nil
+                                  allocator-name))))
+            (:deallocator (destructuring-bind
+                              (deallocator-name) rest
+                            (assert (valid-function-name-p deallocator-name)
+                              (deallocator-name)
+                            "Invalid function name: ~s" deallocator-name)
+                            (assert-not-duplicate-option :deallocator options unparsed)
+                            (setf (getf options :deallocator)
+                                  (if (eq deallocator-name :default)
+                                    nil
+                                    deallocator-name))))
+            (:reader (destructuring-bind
+                         (reader-name) rest
+                       (assert (valid-function-name-p reader-name)
+                              (reader-name)
+                            "Invalid function name: ~s" reader-name)
+                       (assert-not-duplicate-option :reader options unparsed)
+                       (setf (getf options :reader)
+                             (if (eq reader-name :default)
+                               nil
+                               reader-name))))
+            (:writer (destructuring-bind
+                         (writer-name) rest
+                       (assert (valid-function-name-p writer-name)
+                              (writer-name)
+                            "Invalid function name: ~s" writer-name)
+                       (assert-not-duplicate-option :writer options unparsed)
+                       (setf (getf options :writer)
+                             (if (eq writer-name :default)
+                               nil
+                               writer-name))))
+            (:cleaner (destructuring-bind
+                          (cleaner-name) rest
+                        (assert (valid-function-name-p cleaner-name)
+                            (cleaner-name)
+                          "Invalid function name: ~s" cleaner-name)
+                        (assert-not-duplicate-option :cleaner options unparsed)
+                        (setf (getf options :cleaner)
+                              (if (eq cleaner-name :default)
+                                nil
+                                cleaner-name))))
             (:type (destructuring-bind
                        (name) rest
                      (assert-not-duplicate-option :type options unparsed)
@@ -476,7 +606,8 @@
                                  (printer) rest
                                (assert-not-duplicate-option :print-function
                                  options unparsed)
-                               (setf (getf options :print-function) printer)))))
+                               (setf (getf options :print-function) printer)))
+            (T (error "Undefined option: ~s" (cons oname rest)))))
     (let ((nokey (gensym)))
       (when (eq nokey (getf options :constructors nokey))
         (push (list (intern (format nil "~a-~a" 'make name)))
@@ -494,7 +625,7 @@
       (&key conc-name constructors (copier nil copier-p)
        predicate (type nil type-p) (print-object nil print-object-p)
        (print-function nil print-function-p)
-       (include nil include-p))
+       (include nil include-p) &allow-other-keys)
       options
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (defstruct (,name
@@ -685,9 +816,15 @@
 
 (define-type-parser union (options &rest slots)
   (destructuring-bind
-      (&key (align nil align-p)) options
+      (&key (align nil align-p) allocator deallocator reader writer cleaner)
+      options
     (when align-p
       (check-type align positive-fixnum))
+    (assert (valid-function-name-p allocator) (allocator))
+    (assert (valid-function-name-p deallocator) (deallocator))
+    (assert (valid-function-name-p reader) (reader))
+    (assert (valid-function-name-p writer) (writer))
+    (assert (valid-function-name-p cleaner) (cleaner))
     (multiple-value-bind
         (slots size size-no-padding align)
         (parse-union-slots nil slots nil align)
@@ -696,6 +833,11 @@
                        (primitive-type-p type)))
                  slots)
         (make-instance 'immediate-union-type
+          :allocator (if (eq allocator :default) nil allocator)
+          :deallocator (if (eq deallocator :default) nil deallocator)
+          :reader  (if (eq reader :default) nil reader)
+          :writer  (if (eq writer :default) nil writer)
+          :cleaner  (if (eq cleaner :default) nil cleaner)
           :slots slots
           :size size
           :size-no-padding size-no-padding
@@ -707,13 +849,23 @@
                                                          max-type type)
                        :finally (return max-type)))
         (make-instance 'union-type
+          :allocator (if (eq allocator :default) nil allocator)
+          :deallocator (if (eq deallocator :default) nil deallocator)
+          :reader  (if (eq reader :default) nil reader)
+          :writer  (if (eq writer :default) nil writer)
+          :cleaner  (if (eq cleaner :default) nil cleaner)
           :slots slots
           :size size
           :size-no-padding size-no-padding
           :align align)))))
   
 (defmethod unparse-type ((type union-type))
-  `(union (:align ,(struct-align type))
+  `(union (:align ,(struct-align type)
+           :allocator ,(or (struct-allocator type) :default)
+           :deallocator ,(or (struct-deallocator type) :default)
+           :reader ,(or (struct-reader type) :default)
+           :writer ,(or (struct-writer type) :default)
+           :cleaner ,(or (struct-cleaner type) :default))
           ,@(loop :for (name slot-type offset align)
               :in (struct-slots type)
               :collect `(,name ,(unparse-type slot-type)                               
@@ -736,6 +888,11 @@
                                (primitive-type-p type)))
                          slots)
                 (make-instance 'immediate-named-union-type
+                  :allocator (getf options :allocator)
+                  :deallocator (getf options :deallocator)
+                  :reader (getf options :reader)
+                  :writer (getf options :writer)
+                  :cleaner (getf options :cleaner)
                   :name name
                   :ctor-name ctor-name
                   :conc-name conc-name
@@ -751,6 +908,11 @@
                                                                  max-type type)
                                :finally (return max-type)))
                 (make-instance 'named-union-type
+                  :allocator (getf options :allocator)
+                  :deallocator (getf options :deallocator)
+                  :reader (getf options :reader)
+                  :writer (getf options :writer)
+                  :cleaner (getf options :cleaner)
                   :name name
                   :ctor-name ctor-name
                   :conc-name conc-name

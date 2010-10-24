@@ -184,7 +184,8 @@
                   (p (alloc ts struct)))
              (unwind-protect
                  (and (equalp struct (deref p ts))
-                      (eq out (deref p ts 0 out))
+                      (without-circular-references
+                        (eq out (deref p ts 0 out)))
                       (equalp out struct))
                (free p ts)))
            (compiled
@@ -193,7 +194,8 @@
                      (p (alloc ',ts struct)))
                 (unwind-protect
                     (and (equalp struct (deref p ',ts))
-                         (eq out (deref p ',ts 0 out))
+                         (without-circular-references
+                           (eq out (deref p ',ts 0 out)))
                          (equalp out struct))
                   (free p ',ts)))))))
 
@@ -208,7 +210,8 @@
                   (p (alloc ts struct)))
              (unwind-protect
                  (and (equalp struct (deref p ts))
-                      (eq out (deref p ts 0 out))
+                      (without-circular-references
+                        (eq out (deref p ts 0 out)))
                       (equalp out struct))
                (free p ts)))
            (compiled
@@ -217,7 +220,8 @@
                      (p (alloc ',ts struct)))
                 (unwind-protect
                     (and (equalp struct (deref p ',ts))
-                         (eq out (deref p ',ts 0 out))
+                         (without-circular-references
+                           (eq out (deref p ',ts 0 out)))
                          (equalp out struct))
                   (free p ',ts)))))))
 
@@ -234,22 +238,24 @@
                   (p (alloc ts struct)))
              (unwind-protect
                  (and (equalp struct (deref p ts))
-                      (eq out (deref p ts 0 out))
+                      (without-circular-references
+                        (eq out (deref p ts 0 out)))
                       (equalp out struct)
                       (with-pointer (p struct ts)
                         (equalp struct (deref p ts))))
-               (free p ts)))
+               (clean-and-free p struct ts)))
            (compiled
              `(let* ((struct (test-list 1 (test-list 2)))
                      (out (test-list 0 (test-list 0)))
                      (p (alloc ',ts struct)))
                 (unwind-protect
                     (and (equalp struct (deref p ',ts))
-                         (eq out (deref p ',ts 0 out))
+                         (without-circular-references
+                           (eq out (deref p ',ts 0 out)))
                          (equalp out struct)
                          (with-pointer (p struct ',ts)
                            (equalp struct (deref p ',ts))))
-                  (free p ',ts)))))))
+                  (clean-and-free p struct ',ts)))))))
 
 (defun circle-length (circle)
   (let ((passed '()))
@@ -293,7 +299,7 @@
                             (circle-equal out circle)
                             (with-pointer (p circle ts)
                               (circle-equal circle (deref p ts))))
-                     (free p ts)))))
+                     (clean-and-free p circle ts)))))
            (compiled
              `(let* ((circle (make-test-circle 3 2 1 0))
                      (out (make-test-circle 0 0 0 0)))
@@ -306,4 +312,4 @@
                                (circle-equal out circle)
                                (with-pointer (p circle ',ts)
                                  (circle-equal circle (deref p ',ts))))
-                        (free p ',ts))))))))) 
+                        (clean-and-free p circle ',ts))))))))) 

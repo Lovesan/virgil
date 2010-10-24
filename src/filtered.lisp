@@ -131,13 +131,6 @@
            ,value
            (funcall #',(filtered-type-handler type) ,value))))))
 
-(defun valid-function-name-p (name)
-  (or (symbolp name)
-      (and (proper-list-p name)
-           (= 2 (length name))
-           (eq 'setf (first name))
-           (symbolp (second name)))))
-
 (define-type-parser filtered (type &optional (predicate 'identity)
                                              (handler   'identity))
   (assert (valid-function-name-p predicate)

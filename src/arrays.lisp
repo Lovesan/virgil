@@ -245,7 +245,7 @@
 (defmethod clean-value (pointer value (type sequence-type))
   (let* ((elt-type (st-elt-type type))
          (elt-size (compute-fixed-size elt-type))
-         (len (length value)))
+         (len (seqlen pointer elt-size)))
     (declare (type pointer pointer)
              (type non-negative-fixnum len elt-size))
     (dotimes (i len)
@@ -263,7 +263,7 @@
          (declare (type ,(lisp-type type) ,value)
                   (type pointer ,pointer)
                   (ignorable ,pointer ,value))
-         (let ((,len (length ,value)))
+         (let ((,len (seqlen ,pointer ,elt-size)))
            (declare (type non-negative-fixnum ,len))
            (%dotimes (,i ,len)
              ,(expand-clean-value

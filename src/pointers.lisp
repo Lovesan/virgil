@@ -133,15 +133,6 @@
              (new-offset (the size-t (+ offset padding))))
         new-offset))))
 
-(defmethod allocate-value :around (value (type translatable-type))
-  (if (and *handle-cycles* (not (immediate-type-p type)))
-    (or (cdr (assoc value *allocated-values* :test #'eq))
-        (cdr (assoc value *written-values* :test #'eq))
-        (let ((pointer (call-next-method)))
-          (push (cons value pointer) *allocated-values*)
-          pointer))
-    (call-next-method)))
-
 (defmethod write-value :around (value pointer (type translatable-type))
   (if (and *handle-cycles* (not (immediate-type-p type)))
     (let ((cell (assoc value *written-values* :test #'eq)))
@@ -166,25 +157,6 @@
       (call-next-method))
     (call-next-method)))
 
-(defmethod free-value :around (pointer (type translatable-type))
-  (if (and *handle-cycles* (not (immediate-type-p type)))
-    (unless (member pointer *deallocated-values* :test #'&=)
-      (push pointer *deallocated-values*)
-      (call-next-method))
-    (call-next-method)))
-
-(defmethod expand-allocate-value :around (value-form (type translatable-type))
-  (with-gensyms (value pointer)
-    `(let ((,value ,value-form))
-       (declare (type ,(lisp-type type) ,value))
-       (if *handle-cycles*
-         (or (cdr (assoc ,value *allocated-values* :test #'eq))
-             (cdr (assoc ,value *written-values* :test #'eq))
-             (let ((,pointer ,(call-next-method value type)))
-               (push (cons ,value ,pointer) *allocated-values*)
-               ,pointer))
-         ,(call-next-method value type)))))
-
 (defmethod expand-write-value :around
   (value-form pointer-form (type translatable-type))
   (if (immediate-type-p type)
@@ -194,7 +166,7 @@
          (declare (type pointer ,pointer)
                   (type ,(lisp-type type) ,value))
          (if *handle-cycles*
-           (let ((,cell (assoc ,value *written-values* :test #'eq)))
+           (let ((,cell (member ,value *written-values* :test #'eq)))
              (if ,cell
                (car ,cell)
                (progn (push (cons ,value ,pointer) *written-values*)
@@ -230,25 +202,22 @@
              ,(call-next-method pointer value type))
            ,(call-next-method pointer value type))))))
 
-(defmethod expand-free-value :around (pointer-form (type translatable-type))
-  (if (immediate-type-p type)
-    (call-next-method)
-    (with-gensyms (pointer)
-      `(let ((,pointer ,pointer-form))
-         (declare (type pointer ,pointer))
-         (if *handle-cycles*
-           (unless (member ,pointer *deallocated-values* :test #'&=)
-             (push ,pointer *deallocated-values*)
-             ,(call-next-method pointer type))
-           ,(call-next-method pointer type))))))
-
 (defmethod expand-reference-dynamic-extent :around
   (var size-var value-var body mode (type translatable-type))
   (if (immediate-type-p type)
     (call-next-method)
-    `(let ((*readen-values* '())
-           (*written-values* '())
-           (*allocated-values* '())
-           (*cleaned-values* '())
-           (*deallocated-values* '()))
+    `(progv (when *handle-cycles* '(*readen-values*
+                                    *written-values*
+                                    *cleaned-values*))
+            (when *handle-cycles* '(() () ()))
        ,(call-next-method))))
+
+(defmethod expand-callback-dynamic-extent :around
+  (var value body (type translatable-type))
+  (if (immediate-type-p type)
+    (call-next-method)
+    `(progv (when *handle-cycles* '(*readen-values*
+                                    *written-values*
+                                    *cleaned-values*))
+            (when *handle-cycles* '(() () ()))
+        ,(call-next-method))))

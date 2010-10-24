@@ -5,9 +5,6 @@ CONSTANTS
     Well, something like CONST proxy type, values of which are never allocated
     more than once.
 
-USER-DEFINED READERS/WRITERS/CLEANERS/DEALLOCATORS FOR STRUCTS
-    More flexibility, you know.
-
 BY-VALUE PASSAGE OF AGGREGATE TYPE FUNCTION PARAMETERS
     Well, this is obvious that most CL implementations do not allow
     aggregate types(structs etc.) to be passed by value. However, we can

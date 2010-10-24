@@ -1,3 +1,32 @@
+v0.5.1
+    * Refactored circular reference handling and fixed some bugs, particulary
+        with deallocation of circular structures.
+    * new feature: Struct and union types now may have user-defined readers,
+        writers, cleaners, allocators and deallocators. Those are described
+        using structure options below.
+        Either of those options may be a valid function name,
+        NIL or :DEFAULT. The last two cases designate that Virgil should use
+        its default handler for corresponding operation.
+        ** :ALLOCATOR - a function of one argument, a value to be allocated.
+            Allocator should allocate some system memory, and return a pointer
+            to that memory, but should NOT write contents of value into it.
+        ** :DEALLOCATOR - a function of one argument, a pointer to memory
+            that should be deallocated.
+        ** :READER - a function of two arguments, a pointer to read from, and
+            a structure to which contents of the memory should be written.
+            The second parameter may be NIL, and in this case reader function
+            should allocate new lisp structure. The function should return
+            the structure described.
+        ** :WRITER - a function of two arguments, a structure that should be
+            written and a pointer at which the structure should be written.
+            This function should return the structure that is written.
+        ** :CLEANER - a function of two arguments, a pointer to memory that
+            should be cleaned, and a structure, that was previously written
+            to that memory. The function should, for example, free internal
+            pointers in the raw-memory representation of the structure, but
+            should NOT free the pointer itself. The function's return value
+            is ignored.
+
 v0.5.0
     * new feature: Recursive data structures.
         Named structure types can now hold references to themselves
