@@ -932,7 +932,7 @@
        (eval-when (:compile-toplevel :load-toplevel :execute)
          (notice-union-definition ',name ',ctor-name ',options ',slots)
          (define-type-parser ,name ()
-           (gethash ',name *struct-type-hash*)))
+           (gethash ',name *union-type-hash*)))
        (declaim (inline ,ctor-name))
        (%define-struct ,name ,ctor-name ,options ,@slots)
        ',name)))

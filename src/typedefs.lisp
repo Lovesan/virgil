@@ -62,7 +62,7 @@
                                       (&rest slots)
                                       &rest options)
   (destructuring-bind
-      (&key (base-type 'int base-type-p)
+      (&key (base-type nil base-type-p)
        (lisp-type nil lisp-type-p)
        (prototype nil prototype-p)
        (prototype-expansion nil prototype-expansion-p)
@@ -83,8 +83,9 @@
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (defclass ,name (,@superclasses immediate-type)
          (,@slots))
-       (defmethod base-type ((type ,name))
-         (parse-typespec ',base-type))
+       ,(when base-type-p
+          `(defmethod base-type ((type ,name))
+             (parse-typespec ',base-type)))
        ,(when simple-parser-p
           `(progn
              (define-type-parser ,simple-parser ()

@@ -1,3 +1,7 @@
+v0.5.2
+    * bug fix: BASE-TYPE incorrectly treated immediate unions and enums.
+    * bug fix: Named union type definition was erroneous.
+
 v0.5.1
     * Refactored circular reference handling and fixed some bugs, particulary
         with deallocation of circular structures.
