@@ -3,7 +3,7 @@ v0.5.1
         with deallocation of circular structures.
     * new feature: Struct and union types now may have user-defined readers,
         writers, cleaners, allocators and deallocators. Those are described
-        using structure options below.
+        using structure options described below.
         Either of those options may be a valid function name,
         NIL or :DEFAULT. The last two cases designate that Virgil should use
         its default handler for corresponding operation.
