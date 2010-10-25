@@ -230,11 +230,11 @@
           (data-len bom-len nt-len)
           (cstring-size string :encoding encoding :start start :end end)
         (declare (type non-negative-fixnum data-len bom-len nt-len))
-        (let ((pointer (foreign-alloc :uint8 :count (+ data-len
-                                                       bom-len
-                                                       (if null-terminated-p
-                                                         nt-len
-                                                         0))))
+        (let ((pointer (raw-alloc (+ data-len
+                                     bom-len
+                                     (if null-terminated-p
+                                       nt-len
+                                       0))))
               (bom-vector (bom-vector encoding)))
           (declare (type pointer pointer)
                    (type (simple-array uint8 (*)) bom-vector))
@@ -247,7 +247,7 @@
                   (dotimes (i nt-len)
                     (setf (deref pointer 'uint8 (+ bom-len data-len i)) 0)))
                 pointer)
-            (error (e) (foreign-free (the pointer pointer)) (error e))))))))
+            (error (e) (raw-free (the pointer pointer)) (error e))))))))
 
 (define-translatable-type string-type ()
   ((encoding :initform :encoding
@@ -285,10 +285,10 @@
     `(write-cstring ,value-form ,pointer-form
                     :encoding ,(strtype-encoding type)))
   (:allocator-expansion (value type)
-    `(foreign-alloc :uint8 :count ,(expand-compute-size value type)))
+    `(raw-alloc ,(expand-compute-size value type)))
   (:cleaner-expansion (pointer-form value-form type) nil)
   (:deallocator-expansion (pointer type)
-    `(foreign-free ,pointer)))
+    `(raw-free ,pointer)))
 
 (define-translatable-type static-string-type (string-type)
   ((byte-length :initarg :byte-length
@@ -320,7 +320,7 @@
     `(write-cstring ,value ,pointer :encoding ,(strtype-encoding type)
                     :byte-length ,(strtype-byte-length type)))
   (:allocator-expansion (value type)
-    `(foreign-alloc :uint8 :count ,(compute-fixed-size type))))
+    `(raw-alloc ,(compute-fixed-size type))))
 
 (define-type-parser string (&key (encoding :ascii) byte-length)
   (check-type encoding keyword)

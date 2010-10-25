@@ -91,6 +91,49 @@
 
 (define-symbol-macro &0 (&0))
 
+
+(declaim (inline raw-alloc))
+(defun raw-alloc (size)
+  (declare (type size-t size))
+  #+sbcl (sb-alien:alien-funcall
+           (sb-alien:extern-alien
+             "malloc"
+             (function sb-sys:system-area-pointer sb-alien:unsigned))
+           size)
+  #-sbcl
+  (the pointer (foreign-alloc :uint8 :count size)))
+
+(declaim (inline raw-free))
+(defun raw-free (pointer)
+  (declare (type pointer pointer))
+  #+sbcl (sb-alien:alien-funcall
+           (sb-alien:extern-alien
+             "free"
+             (function sb-alien:void sb-alien:system-area-pointer))
+           pointer)
+  #-sbcl (foreign-free pointer)
+  nil)
+
+(defmacro with-raw-pointer (&whole form
+                            (var size &optional (size-var (gensym)))
+                            &body body)
+  (if (constantp size)
+    `(with-foreign-pointer (,var ,(eval size) ,size-var)
+       ,@body)
+    (if (eq var size-var)
+      (error "Variable name and size variable must differ: ~s"
+             form)
+      (with-gensyms (pointer)
+        `(let* ((,size-var ,size)
+                (,pointer (raw-alloc ,size-var))
+                (,var ,pointer))
+           (declare (type pointer ,pointer ,var)                    
+                    (type size-t ,size-var)
+                    (ignorable ,size-var))
+           (unwind-protect
+               (progn ,@body)
+             (raw-free ,pointer)))))))
+
 (defun deref (pointer type &optional (offset 0) output)
   (declare (type pointer pointer)
            (type non-negative-fixnum offset))

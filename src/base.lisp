@@ -82,6 +82,7 @@
   (error "~s is not a valid translatable type"
          type))
 
+
 (defgeneric base-type (type)
   (:method ((type primitive-type))
     type)
@@ -289,9 +290,9 @@
 
 (defgeneric allocate-value (value type)
   (:method (value (type translatable-type))
-    (foreign-alloc :uint8 :count (compute-size value type)))
+    (funcall 'raw-alloc (compute-size value type)))
   (:method (value (type primitive-type))
-    (foreign-alloc (primitive-type-cffi-type type)))
+    (funcall 'raw-alloc (foreign-type-size (primitive-type-cffi-type type))))
   (:method (value type)
     (error-not-translatable-type type)))
 
@@ -299,7 +300,7 @@
   (:method (value-form (type translatable-type))
     `(allocate-value ,value-form ,type))
   (:method (value-form (type primitive-type))
-    `(foreign-alloc ',(primitive-type-cffi-type type)))
+    `(raw-alloc ,(foreign-type-size (primitive-type-cffi-type type))))
   (:method (value-form type)
     (error-not-translatable-type type)))
 
@@ -320,7 +321,7 @@
 (defgeneric free-value (pointer type)
   (:method (pointer (type translatable-type))
     (declare (type foreign-pointer pointer))
-    (foreign-free pointer)
+    (funcall 'raw-free pointer)
     nil)
   (:method (pointer type)
     (error-not-translatable-type type)))
@@ -330,7 +331,7 @@
     `(free-value ,pointer-form ,type))
   (:method (pointer-form (type primitive-type))
     `(progn 
-       (foreign-free (the foreign-pointer ,pointer-form))
+       (raw-free (the foreign-pointer ,pointer-form))
        nil))
   (:method (pointer-form type)
     (error-not-translatable-type type)))
@@ -346,9 +347,9 @@
     (var size-var value-var body mode type)
   (:method (var size-var value-var body mode (type translatable-type))
     (with-gensyms (pointer-var)
-      `(with-foreign-pointer (,pointer-var ,(eval-if-constantp
-                                              (expand-compute-size value-var type))
-                                           ,size-var)
+      `(with-raw-pointer (,pointer-var ,(eval-if-constantp
+                                          (expand-compute-size value-var type))
+                                       ,size-var)
          (let ((,var ,pointer-var))           
            (%unwind-protect
              ,(ecase mode
@@ -445,7 +446,7 @@
   (declare (type pointer pointer))
   (if type-p
     (free-value pointer (parse-typespec type))
-    (foreign-free pointer)))
+    (funcall 'raw-free pointer)))
 
 (define-compiler-macro free (&whole form pointer &optional (type nil type-p))
   (if type-p
@@ -455,7 +456,7 @@
         `(progn
            ,(expand-free-value pointer (parse-typespec type)))
         form))
-    `(foreign-free ,pointer)))
+    `(raw-free ,pointer)))
 
 (defun clean (pointer value type)
   (declare (type pointer pointer))

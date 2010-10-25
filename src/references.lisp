@@ -45,9 +45,9 @@
       'void
       (expand-prototype (rtype-type type))))
   (:allocator-expansion (value type)
-    `(foreign-alloc :uint8 :count ,(compute-fixed-size type)))
+    `(raw-alloc ,(compute-fixed-size type)))
   (:deallocator-expansion (pointer type)
-    `(foreign-free ,pointer))
+    `(raw-free ,pointer))
   (:dynamic-extent-expansion (var value-var body type)
     (let ((expansion
             (expand-reference-dynamic-extent
@@ -202,7 +202,7 @@
 (defmethod expand-reference-dynamic-extent
     (var size-var value-var body mode (type reference-type))
   (with-gensyms (pointer-var)
-    `(with-foreign-pointer (,var ,(compute-fixed-size type) ,size-var)
+    `(with-raw-pointer (,var ,(compute-fixed-size type) ,size-var)
        ,(expand-reference-dynamic-extent
           pointer-var (gensym) value-var
           `((setf (deref ,var '*) ,pointer-var) nil ,@body)

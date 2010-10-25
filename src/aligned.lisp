@@ -37,8 +37,7 @@
     (let* ((size (compute-size value (proxied-type type)))
            (align (aligned-type-align type))
            (padding (+ (sizeof '*) (1- align)))
-           (pointer (foreign-alloc
-                      :uint8 :count (+ padding size)))
+           (pointer (raw-alloc (+ padding size)))
            (aligned-pointer (if (align-exp2-p align)
                               (logand (&& (&+ pointer (+ (sizeof '*) (1- align))))
                                       (lognot (1- align)))
@@ -55,8 +54,7 @@
              (padding (+ (sizeof '*) (1- align))))
         `(let* ((,value (the ,(lisp-type atype) ,value-form))
                 (,size (the size-t ,(expand-compute-size value atype)))
-                (,pointer (foreign-alloc
-                            :uint8 :count (+ ,padding ,size)))
+                (,pointer (raw-alloc (+ ,padding ,size)))
                 (,aligned-pointer ,(if (align-exp2-p align)
                                      `(& (logand
                                            (the size-t (&& (&+ ,pointer ,(+ (sizeof '*)
@@ -71,20 +69,20 @@
                  ,pointer)
            ,aligned-pointer))))
   (:deallocator (pointer type)
-    (foreign-free (deref pointer '* (- (sizeof '*)))))
+    (raw-free (deref pointer '* (- (sizeof '*)))))
   (:deallocator-expansion (pointer-form type)
-    `(foreign-free (deref ,pointer-form '* (- ,(sizeof '*)))))
+    `(raw-free (deref ,pointer-form '* (- ,(sizeof '*)))))
   (:reference-dynamic-extent-expansion (var size-var value-var body mode type)
     (let* ((atype (proxied-type type))
            (align (aligned-type-align type)))
       (with-gensyms (pointer-var)
-        `(with-foreign-pointer (,pointer-var
-                                 ,(eval-if-constantp
-                                    `(+ ,(1- align)
-                                        ,(expand-compute-size
-                                           value-var
-                                           atype)))
-                                 ,size-var)
+        `(with-raw-pointer (,pointer-var
+                             ,(eval-if-constantp
+                                `(+ ,(1- align)
+                                    ,(expand-compute-size
+                                       value-var
+                                       atype)))
+                             ,size-var)
            (let* ((,pointer-var ,(if (align-exp2-p align)
                                      `(& (logand
                                            (the size-t (&& (&+ ,pointer-var ,(1- align))))

@@ -1,3 +1,22 @@
+v0.5.5
+    * new feature: New functions and macros:
+        ** RAW-ALLOC (size)
+            Allocates SIZE bytes of foreign memory. That memory should be
+            later deallocated with RAW-FREE
+        ** RAW-FREE (pointer)
+            Deallocates memory previously allocated by RAW-ALLOC
+        ** WITH-RAW-POINTER ((var size &optional size-var) &body body)
+            Allocates SIZE bytes of memory, binds VAR to it, optionally
+            binds SIZE-VAR to the size of the allocated chunk and then
+            executes BODY in dynamic environment. Finally, before leaving
+            dynamic environment, memory designated by VAR pointer is
+            deallocated, so that pointer is no longer valid.
+            Notice, that if SIZE is constant expression, memory may be
+            allocated on the stack.
+        RAW-ALLOC and RAW-FREE are roughly identical to CFFI's foreign-alloc
+        and foreign-free, except for SBCL, where they call malloc and free
+        directly
+
 v0.5.4
     * bug fix: READ-CSTRING with :OUT parameter supplied now respect
         length of that parameter

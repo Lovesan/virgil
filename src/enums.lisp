@@ -72,9 +72,9 @@
   (:cleaner (pointer value type) nil)
   (:cleaner-expansion (pointer value type) nil)
   (:allocator-expansion (value type)
-    `(foreign-alloc :uint8 :count ,(compute-fixed-size type)))
+    `(raw-alloc ,(compute-fixed-size type)))
   (:deallocator-expansion (pointer type)
-    `(foreign-free ,pointer)))
+    `(raw-free ,pointer)))
 
 (define-immediate-type named-enum-type (enum-type)
   ((name :initarg :name

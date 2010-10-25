@@ -129,6 +129,9 @@
     #:voidp
     
     ;;pointer and reference stuff
+    #:raw-alloc
+    #:raw-free
+    #:with-raw-pointer
     #:pointer
     #:*
     #:&
