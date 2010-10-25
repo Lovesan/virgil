@@ -774,7 +774,15 @@
     (with-gensyms (pointer)
       `(with-foreign-pointer (,pointer ,(compute-fixed-size (base-type type)))
          ,(expand-write-value value pointer (base-type type))
-         ,(expand-read-value pointer nil type)))))
+         ,(expand-read-value pointer nil type))))
+  (:dynamic-extent-expansion (var value body type)
+    (with-gensyms (pointer)
+      (once-only (value)
+        `(with-foreign-pointer (,pointer ,(compute-fixed-size (base-type type)))
+           ,(expand-write-value value pointer type)
+           (prog1 (let ((,var ,(expand-read-value pointer nil (base-type type))))
+                    ,@body)
+            ,(expand-clean-value pointer value type)))))))
 
 (define-immediate-type immediate-named-union-type
     (immediate-union-type named-struct-type)
@@ -828,9 +836,10 @@
     (multiple-value-bind
         (slots size size-no-padding align)
         (parse-union-slots nil slots nil align)
-      (if (every (lambda (spec &aux (type (second spec)))
-                   (or (immediate-type-p type)
-                       (primitive-type-p type)))
+      (if (every (lambda (spec &aux (type (second spec)) (size (fifth spec)))
+                   (and (or (immediate-type-p type)
+                            (primitive-type-p type))
+                        (member size '(1 2 4 8) :test #'=)))
                  slots)
         (make-instance 'immediate-union-type
           :allocator (if (eq allocator :default) nil allocator)
@@ -842,12 +851,12 @@
           :size size
           :size-no-padding size-no-padding
           :align align
-          :base-type (loop :with max-type = (parse-typespec 'byte)
-                       :with max-size = 1
-                       :for (name type offs align size) :in slots
-                       :when (> size max-size) :do (setf max-size size
-                                                         max-type type)
-                       :finally (return max-type)))
+          :base-type (parse-typespec
+                       (ecase (reduce #'max (mapcar #'fifth slots))
+                         (1 'uint8)
+                         (2 'uint16)
+                         (4 'uint32)
+                         (8 'uint64))))
         (make-instance 'union-type
           :allocator (if (eq allocator :default) nil allocator)
           :deallocator (if (eq deallocator :default) nil deallocator)

@@ -1,3 +1,8 @@
+v0.5.3
+    * bug fix: Immediate union's dynamic extent expansion now does cleanup
+    * bug fix: Immediate unions are now converted correctly, even in case when
+        one of the types in union is a reference type
+
 v0.5.2
     * bug fix: BASE-TYPE incorrectly treated immediate unions and enums.
     * bug fix: Named union type definition was erroneous.
