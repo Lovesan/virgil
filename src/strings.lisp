@@ -111,6 +111,21 @@
       (2 (strlen pointer offset 2))
       (4 (strlen pointer offset 4)))))
 
+(defun cstring-size (string &key (encoding :ascii) (start 0) end)
+  (declare (type non-negative-fixnum start)
+           (type (or null non-negative-fixnum) end))
+  (let ((encoding (get-character-encoding encoding)))
+    (with-checked-simple-vector ((string string) (start start) (end end))
+      (declare (type simple-string string)
+               (type non-negative-fixnum start end))
+      (values (funcall (octet-counter
+                         (lookup-mapping *string-pointer-mappings* encoding))
+                       string start end -1)
+              (if (enc-use-bom encoding)
+                (length (enc-bom-encoding encoding))
+                0)
+              (length (enc-nul-encoding encoding))))))
+
 (defun read-cstring (pointer &key (offset 0)
                              (encoding :ascii)
                              byte-length
@@ -124,8 +139,15 @@
   (let* ((encoding (get-character-encoding encoding))
          (mapping (lookup-mapping *string-pointer-mappings* encoding))
          (max-bytes (or byte-length
-                        (cstring-length pointer :encoding encoding
-                                        :offset offset)))
+                        (if (null out)
+                          (cstring-length pointer :encoding encoding
+                                          :offset offset)
+                          (min (cstring-length pointer :encoding encoding
+                                               :offset offset)
+                               (multiple-value-bind
+                                   (data-len bom-len nt-len)
+                                   (cstring-size out :encoding encoding)                                
+                                 (the non-negative-fixnum (+ data-len bom-len nt-len)))))))
          (max-chars (if (null out)
                       (funcall (code-point-counter mapping)
                                pointer offset (+ offset max-bytes)
@@ -149,21 +171,6 @@
       (enc-bom-encoding encoding)
       #())
     '(simple-array (unsigned-byte 8) (*))))
-
-(defun cstring-size (string &key (encoding :ascii) (start 0) end)
-  (declare (type non-negative-fixnum start)
-           (type (or null non-negative-fixnum) end))
-  (let ((encoding (get-character-encoding encoding)))
-    (with-checked-simple-vector ((string string) (start start) (end end))
-      (declare (type simple-string string)
-               (type non-negative-fixnum start end))
-      (values (funcall (octet-counter
-                         (lookup-mapping *string-pointer-mappings* encoding))
-                       string start end -1)
-              (if (enc-use-bom encoding)
-                (length (enc-bom-encoding encoding))
-                0)
-              (length (enc-nul-encoding encoding))))))
 
 (defun write-cstring (string pointer &key (start 0)
                              end

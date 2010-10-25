@@ -1,3 +1,7 @@
+v0.5.4
+    * bug fix: READ-CSTRING with :OUT parameter supplied now respect
+        length of that parameter
+
 v0.5.3
     * bug fix: Immediate union's dynamic extent expansion now does cleanup
     * bug fix: Immediate unions are now converted correctly, even in case when
