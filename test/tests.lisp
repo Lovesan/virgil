@@ -58,7 +58,7 @@
                            'llong  123
                            'ullong 123
                            'pointer (cffi:null-pointer)
-                           'single 123.0s0
+                           'single 123.0e0
                            'double 123.0d0
                            'char #\A
                            'wchar #\A
@@ -179,8 +179,8 @@
     (let ((ts '(struct ()
                 (x char)
                 (y float))))
-      (and (let* ((struct (ht 'x #\A 'y 123.0s0))
-                  (out (ht 'x #\B 'y 124.0s0))
+      (and (let* ((struct (ht 'x #\A 'y 123.0e0))
+                  (out (ht 'x #\B 'y 124.0e0))
                   (p (alloc ts struct)))
              (unwind-protect
                  (and (equalp struct (deref p ts))
@@ -189,8 +189,8 @@
                       (equalp out struct))
                (free p ts)))
            (compiled
-             `(let* ((struct (ht 'x #\A 'y 123.0s0))
-                     (out (ht 'x #\B 'y 124.0s0))
+             `(let* ((struct (ht 'x #\A 'y 123.0e0))
+                     (out (ht 'x #\B 'y 124.0e0))
                      (p (alloc ',ts struct)))
                 (unwind-protect
                     (and (equalp struct (deref p ',ts))
@@ -201,7 +201,7 @@
 
 (define-struct test-struct
   (x char :initform #\A)
-  (y float :initform 123.0s0))
+  (y float :initform 123.0e0))
 
 (deftest structs.named.alloc-read-write-free
     (let ((ts 'test-struct))
