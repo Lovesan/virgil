@@ -1,3 +1,7 @@
+v0.5.7
+    * new feature: Named structures and unions now allow documentation
+        Example: (define-struct my-struct "This is my struct" (slot int))
+
 v0.5.6
     * new feature: Lisp names of functions defined by DEFINE-EXTERNAL-FUNCTION
         can now be of form (SETF name)

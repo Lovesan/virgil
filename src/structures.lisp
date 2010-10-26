@@ -620,7 +620,7 @@
               (intern (format nil "~a-~a" name 'p)))))
     options))
 
-(defmacro %define-struct (name ctor-name options &body slots)
+(defmacro %define-struct (name ctor-name options doc &body slots)
   (destructuring-bind
       (&key conc-name constructors (copier nil copier-p)
        predicate (type nil type-p) (print-object nil print-object-p)
@@ -642,6 +642,7 @@
                         `((:print-function ,print-function)))
                     ,@(when type-p
                         `((:type ,type))))
+         ,@(ensure-list doc)
          ,@(slots->defstruct-slots slots))
        ,@(when type-p
            `((deftype ,name ()
@@ -667,7 +668,9 @@
   (let* ((name-and-options (ensure-list name-and-options))
          (name (first name-and-options))
          (ctor-name (make-internal-ctor-name name))
-         (options (parse-struct-options name (rest name-and-options))))
+         (options (parse-struct-options name (rest name-and-options)))
+         (doc (if (stringp (car slots)) (car slots) nil))
+         (slots (if (stringp (car slots)) (rest slots) slots)))
     (check-type name symbol)
     `(progn
        (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -675,7 +678,7 @@
            (gethash ',name *struct-type-hash*))
          (notice-struct-definition ',name ',ctor-name ',options ',slots))
        (declaim (inline ,ctor-name))
-       (%define-struct ,name ,ctor-name ,options ,@slots)
+       (%define-struct ,name ,ctor-name ,options ,doc ,@slots)
        ',name)))
 
 (defun union-default-type (type)
@@ -935,7 +938,9 @@
   (let* ((name-and-options (ensure-list name-and-options))
          (name (first name-and-options))
          (ctor-name (make-internal-ctor-name name))
-         (options (parse-struct-options name (rest name-and-options))))
+         (options (parse-struct-options name (rest name-and-options)))
+         (doc (if (stringp (car slots)) (car slots) nil))
+         (slots (if (stringp (car slots)) (rest slots) slots)))
     (check-type name symbol)
     `(progn
        (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -943,5 +948,5 @@
          (define-type-parser ,name ()
            (gethash ',name *union-type-hash*)))
        (declaim (inline ,ctor-name))
-       (%define-struct ,name ,ctor-name ,options ,@slots)
+       (%define-struct ,name ,ctor-name ,options ,doc ,@slots)
        ',name)))
