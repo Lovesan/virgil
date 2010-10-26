@@ -143,7 +143,7 @@
                     (ignorable ,pointer ,value))
            ,@(loop :for (name slot-type offset) :in (struct-slots type)
                :collect (expand-clean-value
-                          `(& ,pointer ,offset)
+                          `(&+ ,pointer ,offset)
                           `(gethash ',name ,value)
                           slot-type))))))
   (:allocator (value type)
@@ -348,7 +348,7 @@
             `(labels ((,cleaner (,pointer ,value)
                         (declare (type pointer ,pointer)
                                  (type ,(lisp-type type) ,value)
-                                 (ignorable ,value))                        
+                                 (ignorable ,pointer ,value))                        
                         ,(when (struct-included type)
                            (expand-clean-value pointer value (struct-included type)))
                         ,@(loop :with conc-name = (struct-conc-name type)

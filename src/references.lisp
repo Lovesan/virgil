@@ -105,23 +105,24 @@
   (let ((rtype (rtype-type type))
         (nullable (rtype-nullable-p type)))
     (once-only ((value `(the ,(lisp-type type) ,value)))
-      (let* ((alloc-expansion
-               (with-gensyms (pointer)
-                 `(let ((,pointer ,(expand-allocate-value value rtype)))
-                    (declare (type pointer ,pointer))
-                    ,(expand-write-value value pointer rtype)
-                    ,pointer)))
-             (expansion (if (immediate-type-p rtype)
-                          alloc-expansion
-                          `(if *handle-cycles*
-                             (or (cdr (assoc ,value *written-values* :test #'eq))
-                                 ,alloc-expansion)
-                             ,alloc-expansion))))
-        (if nullable
-          `(if (voidp ,value)
-             &0
-             ,expansion)
-          expansion)))))
+      `(flet ((alloc-ref (,value)
+                ,(with-gensyms (pointer)
+                   `(let ((,pointer ,(expand-allocate-value value rtype)))
+                      (declare (type pointer ,pointer))
+                      ,(expand-write-value value pointer rtype)
+                      ,pointer))))
+         (flet ((convert-ref (,value)
+                  ,(if (immediate-type-p rtype)
+                     `(alloc-ref ,value)
+                     `(if *handle-cycles*
+                        (or (cdr (assoc ,value *written-values* :test #'eq))
+                            (alloc-ref ,value))
+                        (alloc-ref ,value)))))
+           ,(if nullable
+              `(if (voidp ,value)
+                 &0
+                 (convert-ref ,value))
+              `(convert-ref ,value)))))))
 
 (defmethod translate-value (pointer (type reference-type))
   (let ((rtype (rtype-type type))
@@ -141,23 +142,25 @@
 
 (defmethod expand-translate-value (pointer (type reference-type))
   (let ((rtype (rtype-type type))
-        (nullable (rtype-nullable-p type)))
+        (nullable (rtype-nullable-p type))
+        (out (gensym (string 'out))))
     (once-only ((pointer `(the pointer ,pointer)))
-      (let ((expansion
-              (if (immediate-type-p rtype)
-                (expand-read-value pointer nil rtype)
-                (with-gensyms (out)
-                  `(if *handle-cycles*
-                     (or (cdr (assoc ,pointer *readen-values* :test #'&=))
-                         (let ((,out ,(expand-prototype rtype)))
-                           (declare (type ,(lisp-type rtype) ,out))
-                           ,(expand-read-value pointer out rtype)))
-                     ,(expand-read-value pointer nil rtype))))))
-        (if nullable
-          `(if (&? ,pointer)
-             ,expansion             
-             void)
-          expansion)))))
+      `(flet ((read-ref (,pointer &optional ,out)
+                ,(expand-read-value pointer out rtype)))
+         (flet ((translate-ref (,pointer)
+                  ,(if (immediate-type-p rtype)
+                     `(read-ref ,pointer)
+                     `(if *handle-cycles*
+                        (or (cdr (assoc ,pointer *readen-values* :test #'&=))
+                            (let ((,out ,(expand-prototype rtype)))
+                              (declare (type ,(lisp-type rtype) ,out))
+                              (read-ref ,pointer ,out)))
+                        (read-ref ,pointer)))))
+           ,(if nullable
+              `(if (&? ,pointer)
+                 (translate-ref ,pointer)
+                 void)
+              `(translate-ref ,pointer)))))))
 
 (defmethod clean-value (pointer value (type reference-type))
   (let ((rtype (rtype-type type))
@@ -183,21 +186,21 @@
         (reference (gensym (string 'reference))))
     (once-only ((pointer `(the pointer ,pointer))
                 (value `(the ,(lisp-type type) ,value)))
-      (let* ((clean-expansion `(progn
-                                 ,(expand-clean-value reference value rtype)
-                                 ,(expand-free-value reference rtype)))
-             (expansion (if (immediate-type-p rtype)
-                          clean-expansion
-                          `(if *handle-cycles*
-                             (unless (member ,reference *cleaned-values* :test #'&=)
-                               ,clean-expansion)
-                             ,clean-expansion))))
-        `(let ((,reference (deref ,pointer 'pointer)))
-           (declare (type pointer ,reference))
-           ,(if nullable
-              `(when (&? ,reference)
-                 ,expansion)
-              expansion))))))
+      `(flet ((clean-ref (,reference ,value)
+                ,(expand-clean-value reference value rtype)
+                ,(expand-free-value reference rtype)))
+         ,(let ((expansion (if (immediate-type-p rtype)
+                             `(clean-ref ,reference ,value)
+                             `(if *handle-cycles*
+                                (unless (member ,reference *cleaned-values* :test #'&=)
+                                  (clean-ref ,reference ,value))
+                                (clean-ref ,reference ,value)))))
+            `(let ((,reference (deref ,pointer 'pointer)))
+               (declare (type pointer ,reference))
+               ,(if nullable
+                  `(when (&? ,reference)
+                     ,expansion)
+                  expansion)))))))
 
 (defmethod expand-reference-dynamic-extent
     (var size-var value-var body mode (type reference-type))

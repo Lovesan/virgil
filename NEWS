@@ -1,3 +1,13 @@
+v0.5.6
+    * new feature: Lisp names of functions defined by DEFINE-EXTERNAL-FUNCTION
+        can now be of form (SETF name)
+    * optimization: Code generation, in places where it is necessary to check
+        for circular reference mechanics state, was somewhat optimized
+        for space.
+    * bug fix: EXPAND-CLEANUP-VALUE now correctly calculates offsets for
+        slots of unnamed structs and unions
+    * bug fix: Compiler macro of CLEAN function was erroneous
+
 v0.5.5
     * new feature: New functions and macros:
         ** RAW-ALLOC (size)

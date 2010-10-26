@@ -462,7 +462,7 @@
   (declare (type pointer pointer))
   (clean-value pointer value (parse-typespec type)))
 
-(define-compiler-macro clean (&whole form pointer type &optional value)
+(define-compiler-macro clean (&whole form pointer value type)
   (multiple-value-bind
       (type constantp) (eval-if-constantp type)
     (if constantp

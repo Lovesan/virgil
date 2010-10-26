@@ -278,10 +278,16 @@
             (check-type external-name string)
             (etypecase lisp-name
               (symbol (values external-name lisp-name))
-              (cons (values external-name
-                            (apply #'translate-name
-                                   external-name lisp-name))))))))
-
+              (cons (if (eq 'setf (car lisp-name))
+                      (destructuring-bind
+                          (name) (rest lisp-name)
+                        (check-type name symbol)
+                        (values external-name
+                                `(setf ,name)))
+                      (values external-name
+                              (apply #'translate-name
+                                   external-name lisp-name)))))))))
+  
 (defun revappend* (&rest lists)
   (reduce #'append (mapcar #'reverse lists)))
 
