@@ -1,3 +1,7 @@
+v0.5.8
+    * bug fix: Simple parser option in DEFINE-TRANSLATABLE-TYPE macro
+        now specializes UNPARSE-TYPE function on type that is being defined
+
 v0.5.7
     * new feature: Named structures and unions now allow documentation
         Example: (define-struct my-struct "This is my struct" (slot int))

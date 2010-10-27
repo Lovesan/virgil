@@ -87,6 +87,7 @@
           `(defmethod base-type ((type ,name))
              (parse-typespec ',base-type)))
        ,(when simple-parser-p
+          (check-type simple-parser symbol)
           `(progn
              (define-type-parser ,simple-parser ()
                (make-instance ',name))
@@ -171,8 +172,12 @@
        (defclass ,name (,@superclasses translatable-type)
          (,@slots))
        ,(when simple-parser-p
-          `(define-type-parser ,simple-parser ()
-             (make-instance ',name)))
+          (check-type simple-parser symbol)
+          `(progn
+             (define-type-parser ,simple-parser ()
+               (make-instance ',name))
+             (defmethod unparse-type ((#.(gensym) ,name))
+               ',simple-parser)))
        ,(when size-p
           (assert (not fixed-size-p) ()
             "You should not supply both :size and :fixed-size options: ~_~s"
