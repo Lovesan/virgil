@@ -42,7 +42,8 @@
                   "FAILED"))
       (error (e) (format t "UNEXPECTED FAILURE:~%~a" e)))
     (terpri)
-    (force-output *error-output*)))
+    (force-output *error-output*)
+    (force-output *standard-output*)))
 
 (defvar *primitives* (list 'char-t 123
                            'uchar-t  123

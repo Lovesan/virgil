@@ -1,3 +1,7 @@
+v0.6.1
+    * improvement: CONST memory initialization is now happened during
+        the allocation
+
 v0.6.0
     * new feature: CONST types.
         Typespec syntax: (CONST type &optional (comparator 'equal))

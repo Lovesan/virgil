@@ -34,21 +34,17 @@
          :initform 'equal
          :reader const-type-mode))
   (:allocator (value type)
-    (let ((ctype (proxied-type type))
-          (mode (const-type-mode type)))
-      (ecase mode
-        (eq (or (gethash value *eq-constants*)
-                (setf (gethash value *eq-constants*)
-                      (allocate-value value ctype))))
-        (eql (or (gethash value *eql-constants*)
-                 (setf (gethash value *eql-constants*)
-                       (allocate-value value ctype))))
-        (equal (or (gethash value *equal-constants*)
-                   (setf (gethash value *equal-constants*)
-                         (allocate-value value ctype))))
-        (equalp (or (gethash value *equalp-constants*)
-                    (setf (gethash value *equalp-constants*)
-                          (allocate-value value ctype)))))))
+    (let* ((ctype (proxied-type type))
+           (mode (const-type-mode type))
+           (pointer (ecase mode
+                      (eq (gethash value *eq-constants*))
+                      (eql (gethash value *eql-constants*))
+                      (equal (gethash value *equal-constants*))
+                      (equalp (gethash value *equalp-constants*)))))
+      (unless pointer
+        (setf pointer (allocate-value value ctype))
+        (write-value value pointer ctype))
+      pointer))
   (:allocator-expansion (value type)
     (let* ((ctype (proxied-type type))
            (mode (const-type-mode type))
@@ -58,9 +54,15 @@
                    (equal '*equal-constants*)
                    (equalp '*equalp-constants*))))
       (once-only (value)
-        `(or (gethash ,value ,hash)
-             (setf (gethash ,value ,hash)
-                   ,(expand-allocate-value value ctype))))))
+        (with-gensyms (pointer)
+          `(or (gethash ,value ,hash)
+               (setf (gethash ,value ,hash)
+                     (let ((,pointer ,(expand-allocate-value
+                                        value
+                                        ctype)))
+                       (declare (type pointer ,pointer))
+                       ,(expand-write-value value pointer ctype)
+                       ,pointer)))))))
   (:deallocator (pointer type) nil)
   (:deallocator-expansion (pointer type) nil)
   (:cleaner (value pointer type) nil)
@@ -73,9 +75,7 @@
                 (type size-t ,size-var)
                 (ignorable ,size-var))
        ,(ecase mode
-          (:in `(progn ,(expand-write-value value-var var type)
-                       nil
-                       ,@body))
+          (:in `(locally ,@body))
           ((:inout :out) (error "Trying to modify value of const type, do you?"))))))
 
 (define-immediate-type const-immediate-type (const-type)
