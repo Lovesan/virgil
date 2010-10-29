@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:virgil
-  :version "0.5.8"
+  :version "0.6.0"
   :description "Virgil, a lisper's guide to the lower levels"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
@@ -47,7 +47,8 @@
              (:file "structures")
              (:file "functions")                                      
              (:file "aligned")
-             (:file "filtered")))))
+             (:file "filtered")
+             (:file "const")))))
 
 (defmethod asdf:operation-done-p ((op asdf:test-op)
                                   (c (eql (asdf:find-system :virgil))))

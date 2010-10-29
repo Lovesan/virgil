@@ -128,12 +128,7 @@
   (let ((rtype (rtype-type type))
         (nullable (rtype-nullable-p type)))
     (labels ((translate-ref (pointer)
-               (if (and *handle-cycles*
-                        (not (immediate-type-p rtype)))
-                 (or (cdr (assoc pointer *readen-values* :test #'&=))
-                     (let ((out (prototype rtype)))
-                       (read-value pointer out rtype)))
-                 (read-value pointer nil rtype))))
+               (read-value pointer nil rtype)))
       (if nullable
         (if (&? pointer)
           (translate-ref pointer)
@@ -142,25 +137,15 @@
 
 (defmethod expand-translate-value (pointer (type reference-type))
   (let ((rtype (rtype-type type))
-        (nullable (rtype-nullable-p type))
-        (out (gensym (string 'out))))
+        (nullable (rtype-nullable-p type)))
     (once-only ((pointer `(the pointer ,pointer)))
-      `(flet ((read-ref (,pointer &optional ,out)
-                ,(expand-read-value pointer out rtype)))
-         (flet ((translate-ref (,pointer)
-                  ,(if (immediate-type-p rtype)
-                     `(read-ref ,pointer)
-                     `(if *handle-cycles*
-                        (or (cdr (assoc ,pointer *readen-values* :test #'&=))
-                            (let ((,out ,(expand-prototype rtype)))
-                              (declare (type ,(lisp-type rtype) ,out))
-                              (read-ref ,pointer ,out)))
-                        (read-ref ,pointer)))))
-           ,(if nullable
-              `(if (&? ,pointer)
-                 (translate-ref ,pointer)
-                 void)
-              `(translate-ref ,pointer)))))))
+      `(flet ((read-ref (,pointer)
+                ,(expand-read-value pointer nil rtype)))
+         ,(if nullable
+            `(if (&? ,pointer)
+               (read-ref ,pointer)
+               void)
+            `(read-ref ,pointer))))))
 
 (defmethod clean-value (pointer value (type reference-type))
   (let ((rtype (rtype-type type))

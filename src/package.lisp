@@ -132,6 +132,7 @@
     #:raw-alloc
     #:raw-free
     #:with-raw-pointer
+    #:with-raw-pointers
     #:pointer
     #:*
     #:&
@@ -191,6 +192,9 @@
     
     ;;filtered type
     #:filtered
+    
+    ;;const type
+    #:const
     
     ;;also export CFFI's stuff
     #:callback

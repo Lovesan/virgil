@@ -1,3 +1,11 @@
+v0.6.0
+    * new feature: CONST types.
+        Typespec syntax: (CONST type &optional (comparator 'equal))
+        Where comparator ::= EQ | EQL | EQUAL | EQUALP
+        Values of const types are allocated only once, and never deallocated
+    * new feature: New macro: WITH-RAW-POINTERS
+    * bug fix: Reference type translation was erroneous
+
 v0.5.8
     * bug fix: Simple parser option in DEFINE-TRANSLATABLE-TYPE macro
         now specializes UNPARSE-TYPE function on type that is being defined

@@ -134,6 +134,13 @@
                (progn ,@body)
              (raw-free ,pointer)))))))
 
+(defmacro with-raw-pointers ((&rest specs) &body body)
+  (if (null specs)
+    `(locally ,@body)
+    `(with-raw-pointer ,(car specs)
+       (with-raw-pointers ,(rest specs)
+         ,@body))))
+
 (defun deref (pointer type &optional (offset 0) output)
   (declare (type pointer pointer)
            (type non-negative-fixnum offset))

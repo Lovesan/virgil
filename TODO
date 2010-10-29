@@ -1,10 +1,6 @@
 BITFIELDS
     Uhm... Ok, but who uses bitfields, anyway?
 
-CONSTANTS
-    Well, something like CONST proxy type, values of which are never allocated
-    more than once.
-
 BY-VALUE PASSAGE OF AGGREGATE TYPE FUNCTION PARAMETERS
     Well, this is obvious that most CL implementations do not allow
     aggregate types(structs etc.) to be passed by value. However, we can
