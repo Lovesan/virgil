@@ -1,3 +1,8 @@
+v0.7.0
+    * new feature: Enum types now have :LIST option. When this option is not
+        NIL, enums are strongly typed, and in lisp they are represented as
+        either a list of keywords or a single keyword.
+
 v0.6.2
     * bug fix: Reading strings with output buffer supplied was
         erroneous and could result in output buffer overflow
