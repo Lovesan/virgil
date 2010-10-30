@@ -1,3 +1,7 @@
+v0.7.2
+    * bug fix: Fixed strongly typed enum's PROTOTYPE and PROTOTYPE-EXPANSION
+        methods
+
 v0.7.1
     * bug fix: Fixed enum's translator expansion
 

@@ -39,8 +39,8 @@
    (list :initarg :list
          :initform nil
          :reader enum-type-list-p))
-  (:prototype (type) 0)
-  (:prototype-expansion (type) 0)
+  (:prototype (type) (if (enum-type-list-p type) '() 0))
+  (:prototype-expansion (type) (if (enum-type-list-p type) '() 0))
   (:lisp-type (type)
     `(or (member ,@(mapcar #'first (enum-type-kv type)))
          ,(if (enum-type-list-p type)
