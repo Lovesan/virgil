@@ -1,3 +1,6 @@
+v0.7.1
+    * bug fix: Fixed enum's translator expansion
+
 v0.7.0
     * new feature: Enum types now have :LIST option. When this option is not
         NIL, enums are strongly typed, and in lisp they are represented as
