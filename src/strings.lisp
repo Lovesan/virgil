@@ -138,16 +138,12 @@
            (type (or null non-negative-fixnum) byte-length))
   (let* ((encoding (get-character-encoding encoding))
          (mapping (lookup-mapping *string-pointer-mappings* encoding))
-         (max-bytes (or byte-length
-                        (if (null out)
-                          (cstring-length pointer :encoding encoding
-                                          :offset offset)
-                          (min (cstring-length pointer :encoding encoding
-                                               :offset offset)
-                               (multiple-value-bind
-                                   (data-len bom-len nt-len)
-                                   (cstring-size out :encoding encoding)                                
-                                 (the non-negative-fixnum (+ data-len bom-len nt-len)))))))
+         (max-bytes (if (null out)
+                      (or byte-length (cstring-length pointer :encoding encoding
+                                                      :offset offset))
+                      (min (or byte-length (cstring-length pointer :encoding encoding
+                                                           :offset offset))
+                           (cstring-size out :encoding encoding :start start :end end))))
          (max-chars (if (null out)
                       (funcall (code-point-counter mapping)
                                pointer offset (+ offset max-bytes)

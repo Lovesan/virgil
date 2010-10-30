@@ -207,13 +207,15 @@
               &rest arg-types)
              &rest args)
   (check-type convention (member :cdecl :stdcall))
-  (multiple-value-call
-    #'make-external-call-body
-    `(foreign-funcall-pointer ,pointer (:convention ,convention))
-    (parse-args-and-types args arg-types)
-    result-form
-    return-value-name
-    (parse-typespec return-type)))
+  (multiple-value-bind
+      (arg-types binding-form) (parse-args-and-types args arg-types)
+    (make-external-call-body
+      `(foreign-funcall-pointer ,pointer (:convention ,convention))
+      arg-types
+      binding-form
+      result-form
+      return-value-name
+      (parse-typespec return-type))))
 
 (defmacro external-function-call
     (name ((&optional (convention :cdecl) (library :default))
@@ -222,13 +224,15 @@
            &rest arg-types)
           &rest args)
   (check-type convention (member :cdecl :stdcall))
-  (multiple-value-call
-    #'make-external-call-body
-    `(foreign-funcall (,name :convention ,convention :library ,library))
-    (parse-args-and-types args arg-types)
-    result-form
-    return-value-name
-    (parse-typespec return-type)))
+  (multiple-value-bind
+      (arg-types binding-form) (parse-args-and-types args arg-types)
+    (make-external-call-body
+      `(foreign-funcall (,name :convention ,convention :library ,library))
+      arg-types
+      binding-form
+      result-form
+      return-value-name
+      (parse-typespec return-type))))
 
 (defun write-char-with-case (char out case)
   (write-char (case case

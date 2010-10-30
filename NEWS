@@ -1,3 +1,8 @@
+v0.6.2
+    * bug fix: Reading strings with output buffer supplied was
+        erroneous and could result in output buffer overflow
+    * optimization: Slightly optimized code generation for space
+
 v0.6.1
     * improvement: CONST memory initialization is now happened during
         the allocation

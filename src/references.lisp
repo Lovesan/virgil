@@ -49,19 +49,26 @@
   (:deallocator-expansion (pointer type)
     `(raw-free ,pointer))
   (:dynamic-extent-expansion (var value-var body type)
-    (let ((expansion
-            (expand-reference-dynamic-extent
-              var (gensym) value-var body
-              (rtype-mode type) (rtype-type type))))
-      (if (rtype-nullable-p type)
-        `(if (voidp ,value-var)
-           (let ((,var &0))
-             (prog1
-              (progn ,@body)
-              ,(when (member (rtype-mode type) '(:out :inout))
-                 `(setf ,value-var void))))
-           ,expansion)
-        expansion)))
+    (let ((nullable (rtype-nullable-p type))
+          (fbody (intern (symbol-name (gensym (string 'body))) :virgil)))
+      `(flet ((,fbody (,var)
+                ,@body))
+         ,(let ((expansion (expand-reference-dynamic-extent
+                             var
+                             (gensym)
+                             value-var
+                             `((,fbody ,var))
+                             (rtype-mode type)
+                             (rtype-type type))))
+            (if nullable
+              `(if (voidp ,value-var)
+                 (let ((,var &0))
+                   (prog1
+                    (,fbody ,var)
+                    ,(when (member (rtype-mode type) '(:out :inout))
+                       `(setf ,value-var void))))
+                 ,expansion)
+              expansion)))))
   (:callback-dynamic-extent-expansion (var raw-value body type)
     (let ((mode (rtype-mode type))
           (rtype (rtype-type type))
