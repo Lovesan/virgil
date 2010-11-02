@@ -202,7 +202,7 @@
                        (print-unreadable-object (o s)
                          (write 'void :stream s)))))))
 
-(define-constant void (%void) :test #'equalp)
+(define-constant void (load-time-value (%void) t) :test #'equalp)
 
 (defmethod make-load-form ((object void) &optional env)
   (declare (ignore env))

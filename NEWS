@@ -1,3 +1,6 @@
+v0.7.3
+    * bug fix: Wrapped VOID constant definition in LOAD-TIME-VALUE
+
 v0.7.2
     * bug fix: Fixed strongly typed enum's PROTOTYPE and PROTOTYPE-EXPANSION
         methods
