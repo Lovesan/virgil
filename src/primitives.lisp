@@ -200,7 +200,10 @@
                    (:print-object
                      (lambda (o s)                       
                        (print-unreadable-object (o s)
-                         (write 'void :stream s)))))))
+                         (write 'void :stream s))))))
+  (defmethod make-load-form ((object void) &optional env)
+    (declare (ignore env))
+    `(%void)))
 
 (define-constant void (load-time-value (%void) t) :test #'equalp)
 
