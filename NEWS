@@ -1,3 +1,8 @@
+v0.7.6
+    * Fixed run-time structure reader. Accessor function definiton lookup
+        was replaced by eval, because in case of defstruct-defined structures
+        we cannot guarantee that (SETF accessor) is a function.
+
 v0.7.5
     * Changed private struct constructor's signature. Now it does not
         have any parameters.
