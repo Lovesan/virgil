@@ -630,7 +630,7 @@
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        (defstruct (,name
                     (:conc-name ,conc-name)
-                    (:constructor ,ctor-name)
+                    (:constructor ,ctor-name ())
                     ,@(mapcar (lambda (x) (cons :constructor x))
                         constructors)
                     ,@(when copier-p `((:copier ,copier)))
