@@ -1,3 +1,11 @@
+v0.7.7
+    * new feature: BOOLEAN typespec now accepts optional argument:
+        a base type; which must be integral type.
+        By default, base type is INT.
+        Btw, BOOL is a CFFI's :boolean type wrapper.
+    * Added CL:SINGLE-FLOAT and CL:DOUBLE-FLOAT as an aliases for SINGLE and
+        DOUBLE correspondingly. Notice that SINGLE also has an alias FLOAT.
+
 v0.7.6
     * Fixed run-time structure reader. Accessor function definiton lookup
         was replaced by eval, because in case of defstruct-defined structures

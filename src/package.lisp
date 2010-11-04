@@ -118,7 +118,9 @@
     #:ptrdiff-t
     #:single
     #:float
+    #:single-float
     #:double
+    #:double-float
     #:bool
     #:boolean
     #:char

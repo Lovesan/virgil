@@ -86,13 +86,17 @@
   (:cffi-type :float)
   (:lisp-type single-float))
 
+(defalias single-float () 'single)
+
 (define-primitive-type double
   (:cffi-type :double)
   (:lisp-type double-float))
 
+(defalias double-float () 'double)
+
 (define-primitive-type bool
   (:cffi-type :boolean)
-  (:lisp-type boolean)
+  (:lisp-type T)
   (:prototype nil))
 
 (define-primitive-type int8
@@ -168,9 +172,9 @@
   (:lisp-type (type) 'character))
 
 (define-immediate-type boolean-type ()
-  ()
-  (:base-type int)
-  (:simple-parser boolean)
+  ((base-type :initform (parse-typespec 'int)
+              :initarg :base-type
+              :reader base-type))
   (:lisp-type (type) t)
   (:prototype (type) nil)
   (:prototype-expansion (type) nil)
@@ -188,6 +192,16 @@
     `(raw-alloc ,(compute-fixed-size type)))
   (:deallocator-expansion (pointer type)
     `(raw-free ,pointer)))
+
+(define-type-parser boolean (&optional (base-type 'int))
+  (let ((base-type (parse-typespec base-type)))
+    (assert (subtypep (lisp-type base-type) 'integer)
+        (base-type) "Boolean type must be integral type")
+    (make-instance 'boolean-type
+      :base-type base-type)))
+
+(defmethod unparse-type ((type boolean-type))
+  `(boolean ,(unparse-type (base-type type))))
 
 (defun error-void-operation ()
   (error "Cannot operate on VOID type"))

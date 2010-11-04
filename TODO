@@ -1,3 +1,6 @@
+EXTERNAL VARIABLES
+    As in CFFI. And, maybe, local variables too.
+
 BITFIELDS
     Uhm... Ok, but who uses bitfields, anyway?
 
