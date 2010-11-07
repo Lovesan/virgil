@@ -326,7 +326,7 @@
                     *cleaned-values*))
                 (when *handle-cycles* '(() () ()))
            (let ((,pointer ,pointer-form)
-                 (,type-var (parse-typespec ',type)))
+                 (,type-var (parse-typespec ,type)))
              (declare (type pointer ,pointer))
              ,(let ((expansion
                       (ecase mode
