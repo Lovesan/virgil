@@ -693,63 +693,64 @@
   (:reader (pointer out type)
     (if (null out)
       (call-next-method pointer out type)
-      (loop :for (name slot-type) :in (struct-slots type)
-        :do (when (typep out (lisp-type slot-type))
-              (return (read-value pointer out slot-type)))
-        :finally (if (typep out (union-default-type type))
-                   (return (call-next-method pointer out type))
-                   (error "~s is invalid value for union type ~s"
+      (if (typep out (union-default-type type))
+        (call-next-method pointer out type)
+        (loop :for (name slot-type) :in (struct-slots type)
+          :do (when (typep out (lisp-type slot-type))
+                (return (read-value pointer out slot-type)))
+          :finally (error "~s is invalid value for union type ~s"
                           out (unparse-type type))))))
   (:reader-expansion (pointer out type)
     (once-only (pointer out)      
       `(if (null ,out)
          ,(call-next-method pointer out type)
-         (etypecase ,out
+         (etypecase ,out           
+           (,(union-default-type type)
+            ,(call-next-method pointer out type))
            ,@(loop :for (name slot-type) :in (struct-slots type)
                :collect `(,(lisp-type slot-type)
                           ,(expand-read-value
                              pointer
                              out
-                             slot-type)))
-           (,(union-default-type type)
-            ,(call-next-method pointer out type))))))
+                             slot-type)))))))
   (:writer (value pointer type)
-    (loop :for (name slot-type) :in (struct-slots type)
-      :do (when (typep value (lisp-type slot-type))
-            (return (write-value value pointer slot-type)))
-      :finally (if (typep value (union-default-type type))
-                 (call-next-method value pointer type)
-                 (error "~s is invalid value for union type ~s"
+    (if (typep value (union-default-type type))
+      (call-next-method value pointer type)
+      (loop :for (name slot-type) :in (struct-slots type)
+        :do (when (typep value (lisp-type slot-type))
+              (return (write-value value pointer slot-type)))
+        :finally (error "~s is invalid value for union type ~s"
                         value (unparse-type type)))))
   (:writer-expansion (value pointer type)
     (once-only (value pointer)
       `(etypecase ,value
+         (,(union-default-type type)
+          ,(call-next-method value pointer type))
          ,@(loop :for (name slot-type) :in (struct-slots type)
              :collect `(,(lisp-type slot-type)
                         ,(expand-write-value
                            value
                            pointer
-                           slot-type)))
-         (,(union-default-type type)
-          ,(call-next-method value pointer type)))))
+                           slot-type))))))
   (:cleaner (pointer value type)
-    (loop :for (name slot-type) :in (struct-slots type)
-      :do (when (typep value (lisp-type slot-type))
-            (return (clean-value pointer value slot-type)))
-      :finally (if (typep value (union-default-type type))
-                 (call-next-method pointer value type)
-                 (error "~s is invalid value for union type ~s"
+    (if (typep value (union-default-type type))
+      (call-next-method pointer value type)
+      (loop :for (name slot-type) :in (struct-slots type)
+        :do (when (typep value (lisp-type slot-type))
+              (return (clean-value pointer value slot-type)))
+        :finally (error "~s is invalid value for union type ~s"
                         value (unparse-type type)))))
   (:cleaner-expansion (pointer value type)
     (once-only (pointer value)
-      `(etypecase ,value
+      `(etypecase ,value         
+         (,(union-default-type type)
+            ,(call-next-method pointer value type))
          ,@(loop :for (name slot-type) :in (struct-slots type)
              :collect `(,(lisp-type slot-type)
                         ,(expand-clean-value
                            pointer
                            value
-                           slot-type)))
-         (,(union-default-type type) ,(call-next-method pointer value type))))))
+                           slot-type)))))))
 
 ;;Time for CLOS magic to come
 (define-translatable-type named-union-type (union-type named-struct-type)
