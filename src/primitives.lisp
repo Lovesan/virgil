@@ -71,16 +71,16 @@
   (:lisp-type #.(%int-type :ullong)))
 
 (define-primitive-type uint-ptr
-  (:cffi-type #-x86-x64 :uint32
-              #+x86-x64 :uint64)
-  (:lisp-type #-x86-x64 #.(%int-type :uint32)
+  (:cffi-type #-x86-64 :uint32
+              #+x86-64 :uint64)
+  (:lisp-type #-x86-64 #.(%int-type :uint32)
               #+x86-64 #.(%int-type :uint64)))
 
 (define-primitive-type int-ptr
-  (:cffi-type #-x86-x64 :int32
-              #+x86-x64 :int64)
-  (:lisp-type #-x86-x64 #.(%int-type :int32)
-              #+x86-x64 #.(%int-type :int64)))
+  (:cffi-type #-x86-64 :int32
+              #+x86-64 :int64)
+  (:lisp-type #-x86-64 #.(%int-type :int32)
+              #+x86-64 #.(%int-type :int64)))
 
 (define-primitive-type single
   (:cffi-type :float)
