@@ -206,24 +206,10 @@
 (defun error-void-operation ()
   (error "Cannot operate on VOID type"))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (declaim (inline %void voidp))
-  (defstruct (void (:constructor %void ())
-                   (:predicate voidp)
-                   (:copier)
-                   (:print-object
-                     (lambda (o s)                       
-                       (print-unreadable-object (o s)
-                         (write 'void :stream s))))))
-  (defmethod make-load-form ((object void) &optional env)
-    (declare (ignore env))
-    `(%void)))
-
-(define-constant void (load-time-value (%void) t) :test #'equalp)
-
-(defmethod make-load-form ((object void) &optional env)
-  (declare (ignore env))
-  'void)
+(deftype void () '(eql void))
+(declaim (inline voidp))
+(defun voidp (object) (eq object 'void))
+(define-constant void 'void)
 
 (define-immediate-type void-type ()
   ()
