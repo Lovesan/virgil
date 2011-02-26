@@ -1,3 +1,14 @@
+v0.8.0
+    * `Simple' and `:list' enum types now behave identically on conversion.
+        I.e. now those types accept keywords, integers or lists of
+        keywords/integers. On translation, :list types now return
+        integer value as a first element of the list.
+    * New function: CLEAR-CONST-CACHE. Deallocates all allocated constants
+        (i.e. values converted with `const' type)
+        You MUST call this function before saving a lisp image because
+        all foreign pointers from previous lisp sessions become
+        invalid.
+
 v0.7.12
     * VOID constant has been redefined.
         Now it has a value of VIRGIL:VOID symbol.

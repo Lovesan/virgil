@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -100,20 +100,20 @@
                 (eqlp ,test (deref p ',type)))))))
 
 (deftest enums.convert-translate
-    (let ((ts '(enum (:base-type uint32)
+    (let ((ts '(enum (:base-type uint32 :list t)
                 :c1
                 :c2
                 (:c3 123)
                 :c4)))
-      (and (eq :c1 (translate (convert 0 ts) ts))
-           (eq :c2 (translate (convert 1 ts) ts))
-           (eq :c3 (translate (convert 123 ts) ts))
-           (eq :c4 (translate (convert 124 ts) ts))
+      (and (equal '(0 :c1)           (translate (convert 0 ts) ts))
+           (equal '(1 :c1 :c2)       (translate (convert 1 ts) ts))
+           (equal '(123 :c1 :c2 :c3) (translate (convert 123 ts) ts))
+           (equal '(124 :c1 :c4)     (translate (convert 124 ts) ts))
            (compiled
-             `(and (eq :c1 (translate (convert 0 ',ts) ',ts))
-                   (eq :c2 (translate (convert 1 ',ts) ',ts))
-                   (eq :c3 (translate (convert 123 ',ts) ',ts))
-                   (eq :c4 (translate (convert 124 ',ts) ',ts)))))))
+             `(and (equal '(0 :c1)           (translate (convert 0 ',ts) ',ts))
+                   (equal '(1 :c1 :c2)       (translate (convert 1 ',ts) ',ts))
+                   (equal '(123 :c1 :c2 :c3) (translate (convert 123 ',ts) ',ts))
+                   (equal '(124 :c1 :c4)     (translate (convert 124 ',ts) ',ts)))))))
 
 (define-enum (test-enum (:base-type uint32))
   :c1

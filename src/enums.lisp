@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -39,36 +39,31 @@
    (list :initarg :list
          :initform nil
          :reader enum-type-list-p))
-  (:prototype (type) (if (enum-type-list-p type) '() 0))
-  (:prototype-expansion (type) (if (enum-type-list-p type) '() 0))
+  (:prototype (type) 0)
+  (:prototype-expansion (type) 0)
   (:lisp-type (type)
     `(or (member ,@(mapcar #'first (enum-type-kv type)))
-         ,(if (enum-type-list-p type)
-            'list
-            (lisp-type (base-type type)))))
+         list
+         ,(lisp-type (base-type type))))
   (:converter (lisp-value type)
-    (if (enum-type-list-p type)
-      (loop :with result = 0
-        :with kv = (enum-type-kv type)
-        :for key :in (ensure-list lisp-value)
-        :do (setf result (logior result
+    (loop :with result = 0
+      :with kv = (enum-type-kv type)
+      :for key :in (ensure-list lisp-value)
+      :do (setf result (logior result
+                               (if (integerp key)
+                                 key
                                  (or (second (assoc key kv))
                                      (error "~s is invalid keyword for enum type ~s"
-                                            lisp-value (unparse-type type)))))
-        :finally (return result))
-      (etypecase lisp-value
-        (integer lisp-value)
-        (keyword (or (second (assoc lisp-value (enum-type-kv type)))
-                     (error "~s is invalid keyword for enum type ~s"
-                            lisp-value (unparse-type type)))))))
+                                            lisp-value (unparse-type type))))))
+        :finally (return result)))
   (:translator (raw-value type)
     (if (enum-type-list-p type)
       (loop :with list = '()
         :for vk :in (enum-type-vk type)
         :when (= (car vk) (logand raw-value (car vk)))
         :do (push (second vk) list)
-        :finally (return list))
-      (or (second (assoc raw-value (enum-type-vk type) :test #'=))
+        :finally (return (cons raw-value list)))
+      (or (second (assoc raw-value (enum-type-vk type)))
           raw-value)))
   (:converter-expansion (lisp-value-form type)
     (if (constantp lisp-value-form)
@@ -76,25 +71,19 @@
       (with-gensyms (lisp-value result key)
         `(let ((,lisp-value ,lisp-value-form))
            (declare (type ,(lisp-type type) ,lisp-value))
-           ,(if (enum-type-list-p type)
-              `(let ((,result 0))
-                 (declare (type ,(lisp-type (base-type type)) ,result))
-                 (loop :for ,key :of-type keyword :in (ensure-list ,lisp-value)
-                   :do (setf ,result
-                             (logior ,result
-                                     (ecase ,key
-                                       ,@(enum-type-kv type)
-                                       (T (error "~s is invalid keyword for enum type ~s"
-                                                 ,key
-                                                 ',(unparse-type type)))))))
-                 ,result)
-              `(etypecase ,lisp-value
-                 (integer ,lisp-value)
-                 (keyword (case ,lisp-value
-                            ,@(enum-type-kv type)
-                            (T (error "~s is invalid keyword for enum type ~s"
-                                      ,lisp-value
-                                      ',(unparse-type type)))))))))))
+           (let ((,result 0))
+              (declare (type ,(lisp-type (base-type type)) ,result))
+              (loop :for ,key :in (ensure-list ,lisp-value)
+                :do (setf ,result
+                          (logior ,result
+                                  (if (integerp ,key)
+                                    ,key
+                                    (ecase ,key
+                                      ,@(enum-type-kv type)
+                                      (T (error "~s is invalid keyword for enum type ~s"
+                                                ,key
+                                                ',(unparse-type type))))))))
+              ,result)))))
   (:translator-expansion (raw-value-form type)
     (if (constantp raw-value-form)
       (translate-value (eval raw-value-form) type)
@@ -111,6 +100,7 @@
                                 `(when (= ,(car vk)
                                           (logand ,raw-value ,(car vk)))
                                    (push ',(second vk) ,list))))
+                 (push ,raw-value ,list)
                  ,list)
               `(case ,raw-value
                  ,@(enum-type-vk type)
@@ -155,7 +145,7 @@
                         (setf i v))
                  (error "Invalid enum value spec: ~s" x)))))
           (T (error "Invalid enum value spec: ~s" x)))
-    :finally (return (values kv vk))))
+    :finally (return (values kv (remove-duplicates vk :key #'car :test #'=)))))
 
 (define-type-parser enum (options &rest enum-list)
   (destructuring-bind
@@ -164,12 +154,12 @@
         (kv vk) (parse-enum-list enum-list)
       (make-instance 'enum-type
         :kv kv :vk vk
-        :list list
+        :list (and list t)
         :base-type (parse-typespec base-type)))))
 
 (defmethod unparse-type ((type enum-type))
   `(enum (:base-type ,(unparse-type (base-type type))
-          :list ,(and (enum-type-list-p type) t))
+          :list ,(enum-type-list-p type))
          ,@(enum-type-kv type)))
 
 (defmethod unparse-type ((type named-enum-type))
@@ -208,6 +198,5 @@
                            ,v))
            (deftype ,name () 
              '(or (member ,@(mapcar #'first kv))
-               ,(if list
-                  'list
-                  (lisp-type (parse-typespec base-type))))))))))
+                  list
+                  ,(lisp-type (parse-typespec base-type)))))))))

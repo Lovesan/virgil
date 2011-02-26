@@ -1,6 +1,6 @@
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 
-;;; Copyright (C) 2010, Dmitry Ignatiev <lovesan.ru@gmail.com>
+;;; Copyright (C) 2010-2011, Dmitry Ignatiev <lovesan.ru@gmail.com>
 
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -43,7 +43,13 @@
                       (equalp (gethash value *equalp-constants*)))))
       (unless pointer
         (setf pointer (allocate-value value ctype))
-        (write-value value pointer ctype))
+        (write-value value pointer ctype)
+        (setf (gethash value (ecase mode
+                               (eq *eq-constants*)
+                               (eql *eql-constants*)
+                               (equal *equal-constants*)
+                               (equalp *equalp-constants*)))
+              pointer))
       pointer))
   (:allocator-expansion (value type)
     (let* ((ctype (proxied-type type))
@@ -93,3 +99,11 @@
 (defmethod unparse-type ((type const-type))
   `(const ,(unparse-type (proxied-type type))
           ,(const-type-mode type)))
+
+(defun clear-const-cache ()
+  (loop :for hash :in (list *eq-constants*
+                            *eql-constants*
+                            *equal-constants*
+                            *equalp-constants*)
+    :do (maphash (lambda (k v) (declare (ignore k)) (raw-free v)) hash)
+    (clrhash hash)))
