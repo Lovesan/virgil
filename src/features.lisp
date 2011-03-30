@@ -23,4 +23,31 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (in-package #:virgil)
-#-(or x86 x86-64) (error "Unsupported platform")
+
+#-(or x86 x86-64)
+(error "Unsupported platform")
+
+(pushnew :virgil *features*)
+
+;; see http://tkpapp.blogspot.com/2010/05/upgraded-array-element-types-and-pinned.html
+;; Virgil uses babel's with-simple-vector and cffi's with-pointer-to-vector-data
+#+(or sbcl cmu ecl openmcl lispworks allegro cormanlisp)
+(pushnew :virgil.shareable-arrays *features*)
+
+#+(or sbcl cmu ecl openmcl lispworks allegro cormanlisp)
+(pushnew :virgil.shareable-arrays.float *features*)
+
+#+(or sbcl cmu ecl openmcl lispworks allegro cormanlisp)
+(pushnew :virgil.shareable-arrays.double *features*)
+
+#+(or sbcl cmu ecl openmcl lispworks allegro cormanlisp)
+(pushnew :virgil.shareable-arrays.int8 *features*)
+
+#+(or sbcl cmu ecl openmcl lispworks allegro cormanlisp)
+(pushnew :virgil.shareable-arrays.int16 *features*)
+
+#+(or sbcl cmu openmcl lispworks allegro)
+(pushnew :virgil.shareable-arrays.int32 *features*)
+
+#+(and x86-64 (or sbcl cmu ecl openmcl lispworks allegro))
+(pushnew :virgil.shareable-arrays.int64 *features*)

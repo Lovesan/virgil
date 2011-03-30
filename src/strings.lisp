@@ -150,7 +150,8 @@
                                (1- array-total-size-limit))
                       (- (or end (length out))
                          start)))
-         (result (or out (make-string max-chars :element-type 'character))))
+         (result (or out (make-string max-chars :element-type 'character
+                           :initial-element #.(code-char 0)))))
     (with-checked-simple-vector ((result result)
                                  (start (if (null out) 0 start))
                                  (end (if (null out) nil end)))
@@ -296,13 +297,17 @@
         (floor (strtype-byte-length type)
                (length (enc-nul-encoding
                          (get-character-encoding
-                           (strtype-encoding type)))))))
+                           (strtype-encoding type)))))
+      :element-type 'character
+      :initial-element #.(code-char 0)))
   (:prototype-expansion (type)
     `(make-string
          ,(floor (strtype-byte-length type)
                  (length (enc-nul-encoding
                            (get-character-encoding
-                             (strtype-encoding type)))))))
+                             (strtype-encoding type)))))
+       :element-type 'character
+       :initial-element #.(code-char 0)))
   (:reader (pointer out type)
     (read-cstring pointer :out out :encoding (strtype-encoding type)
                   :byte-length (strtype-byte-length type)))

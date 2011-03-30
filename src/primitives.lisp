@@ -56,11 +56,13 @@
 
 (define-primitive-type long
   (:cffi-type :long)
-  (:lisp-type #.(%int-type :long)))
+  (:lisp-type #+windows #.(%int-type :int32)
+              #-windows #.(%int-type :long)))
 
 (define-primitive-type ulong
   (:cffi-type :ulong)
-  (:lisp-type #.(%int-type :ulong)))
+  (:lisp-type #+windows #.(%int-type :uint32)
+              #-windows #.(%int-type :ulong)))
 
 (define-primitive-type llong
   (:cffi-type :llong)

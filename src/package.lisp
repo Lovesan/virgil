@@ -206,6 +206,8 @@
     #:load-foreign-library
     #:close-foreign-library
     #:use-foreign-library
+    #:list-foreign-libraries
+    #:reload-foreign-libraries
     #:load-foreign-library-error
     #:*foreign-library-directories*
     #:*darwin-framework-directories*

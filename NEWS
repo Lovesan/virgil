@@ -1,3 +1,8 @@
+v0.8.1
+    * Fixed some string misbehavior.
+    * LONG and ULONG types are now defined as [U]INT32 on Windows.
+    * Added some *features*
+
 v0.8.0
     * `Simple' and `:list' enum types now behave identically on conversion.
         I.e. now those types accept keywords, integers or lists of
