@@ -1,3 +1,7 @@
+v0.8.2
+    * Added some documentation.
+    * Fixed some CCL-related misbehavior.
+
 v0.8.1
     * Fixed some string misbehavior.
     * LONG and ULONG types are now defined as [U]INT32 on Windows.

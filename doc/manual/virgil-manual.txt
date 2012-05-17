@@ -1,0 +1,851 @@
+Table of Contents
+*****************
+
+Virgil
+1 Introduction
+2 Installation and Prerequisites
+3 Tutorial
+4 User-level API
+  4.1 User-level Translators
+  4.2 Raw Memory Manipulation
+  4.3 Handling Circular References
+5 Translators and Translatable Types
+  5.1 Translators
+  5.2 Defining and Parsing Type Specifiers
+  5.3 Primitive Types
+  5.4 Immediate Types
+  5.5 Aggregate Types
+  5.6 Proxy Types
+6 Built-in Types
+  6.1 Built-in Primitives
+  6.2 References
+  6.3 Arrays and Sequences
+  6.4 Enumerations
+  6.5 Structures and Unions
+  6.6 Strings
+  6.7 Strictly Aligned Types
+  6.8 Filtered Types
+  6.9 Const Types
+7 Functions
+8 Symbols Re-Exported from CFFI
+Appendix A Glossary
+Index
+
+
+Virgil
+******
+
+Copyright (C) 2010-2012, Dmitry Ignatiev <lovesan.ru at gmail.com>
+     Permission is hereby granted, free of charge, to any person
+     obtaining a copy of this software and associated documentation
+     files (the "Software"), to deal in the Software without
+     restriction, including without limitation the rights to use, copy,
+     modify, merge, publish, distribute, sublicense, and/or sell copies
+     of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be
+     included in all copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+     DEALINGS IN THE SOFTWARE.
+
+1 Introduction
+**************
+
+Virgil is an extensible and high-level foreign function interface(FFI)
+built on top of CFFI and oriented towards marshaling lisp data into raw
+unmanaged memory and back.
+
+   Why the name `Virgil'? Well, have you read Dante's `Divine Comedy'?
+:)
+
+Rationale
+=========
+
+Why another FFI? CFFI seems perfect in terms of portability, but it
+exposes quite a low-level interface. CFFI is oriented towards
+manipulating foreign memory, and forces us to write `C-style' code in
+Lisp.  Remember the old joke - "You can write FORTRAN in any language"?
+Using modern FFIs you can also write `C' in any language - but should
+you?
+
+   Virgil, as opposed to CFFI, is oriented towards marshaling.  This
+means, Virgil does its best to free the programmer from messing up with
+pointers and the like, and allows to communicate with `native' code
+using Lisp data structures.
+
+   Thus, the main difference between CFFI and Virgil is that Virgil
+provides convenient semantics for marshaling aggregate data types and
+strives to establish a one-to-one mapping between lisp types and
+foreign ones.
+
+   Nevertheless, Virgil's interface is actually a bit similiar to that
+of CFFI, so you can easily start using it if you are familiar with the
+latter.
+
+     *Implementor's note:* _Virgil is not a kind of a replacement for
+     CFFI, but instead a kind of a DSL on top of it._
+
+2 Installation and Prerequisites
+********************************
+
+Sources are available on github:
+   * `https://github.com/Lovesan/virgil'
+
+   You can obtain them either using git, or by downloading latest
+zipball:
+   * `https://github.com/Lovesan/virgil/downloads'
+
+   Virgil depends on `CFFI', `alexandria', `babel' and
+`trivial-features'.  Note that CFFI itself depends on the other three
+libraries.
+
+   You can obtain all of them from their home pages:
+   * `http://common-lisp.net/project/cffi/'
+
+   * `http://common-lisp.net/project/babel/'
+
+   * `http://common-lisp.net/project/alexandria/'
+
+   * `http://www.cliki.net/trivial-features'
+   but i recommend to use Zach Bean's quicklisp
+(http://www.quicklisp.org/) - `(ql:quickload :cffi)'
+
+   Note that at the moment Virgil only supports x86 and x86-64
+platforms.  (1)
+
+   ---------- Footnotes ----------
+
+   (1) Mainly because of alignment conventions and because i am
+planning to add `by-value' passage of aggregate function parameters
+
+3 Tutorial
+**********
+
+TODO
+
+4 User-level API
+****************
+
+At the user level, marshaling engine utilizes a concept of `type
+specifier', or `typespec' for short.  A `typespec' is an s-expression
+denoting some marshling rules to be applied to some `foreign' value,
+such as a pointer, to translate it into lisp, or to some lisp value to
+convert it to foreign one.
+
+   Virgil's `type specifiers' are somewhat similiar to Common Lisp
+`type specifiers', in the sense that they are represented either by a
+symbol denoting a type name or by a list, whose first elment is such a
+symbol.
+
+   Virgil exposes a deftype (http://l1sp.org/cl/deftype)-like macro for
+establishing aliases for `typespecs':
+
+ -- Macro: defalias name lambda-list &body body => name
+    NAME
+          A symbol.
+
+    LAMBDA-LIST
+          A function lambda-list.
+
+    BODY
+          List of forms to be executed, preceded by an optional list of
+          declarations.
+
+Example
+-------
+
+  (defalias float4 (&optional (float-type 'single-float))
+    `(simple-array ,float-type (4)))
+
+     *Implementor's note:* _You must not define recursive types with
+     `defalias'. Recursive types are supported only in structures.
+     `defalias', not unlike `deftype', is unable to handle them - lisp
+     system will crash or hang._
+
+4.1 User-level Translators
+==========================
+
+These functions and macros are used with `type specifiers'.  Each of
+them parses a `typespec' into some internal representation and performs
+relevant operation.
+
+   Note that all of the functions mentioned here heavily utilize
+compiler macros (http://l1sp.org/cl/define-compiler-macro), so you
+should pass a constant `typespec' argument to them wherever possible.
+
+ -- Function: sizeof typespec &optional value => count
+     Returns number of bytes required to store value of type denoted by
+     type specifier.  This function also accepts optional argument - a
+     lisp value which is used when the TYPESPEC denotes a
+     variable-sized foreign type.
+    TYPESPEC
+          A Virgil's type specifier.
+
+    VALUE
+          A lisp value.
+
+    COUNT
+          A number of bytes required to store value of type denoted by
+          `typespec'.
+
+ -- Function: alignof typespec => alignment
+     Computes alignment of type denoted by TYPESPEC.
+    TYPESPEC
+          A Virgil's type specifier.
+
+    ALIGNMENT
+          A positive integer.
+
+ -- Function: offsetof typespec member => offset
+     Computes offset(in bytes) of the specified structure's slot.
+    TYPESPEC
+          A Virgil's type specifier denoting a structure type.
+
+    MEMBER
+          A symbol, denoting a structure's slot.
+
+    OFFSET
+          A non-negative integer.
+
+ -- Function: convert lisp-value typespec => foreign-value
+     Converts a lisp value into foreign value.
+    LISP-VALUE
+          A lisp value.
+
+    TYPESPEC
+          A Virgil's type specifier.
+
+    FOREIGN-VALUE
+          A converted value.
+
+    TYPESPEC
+
+ -- Function: translate foreign-value typespec => lisp-value
+     Translates a foreign value into lisp one.
+    FOREIGN-VALUE
+          A foreign value.
+
+    TYPESPEC
+          A Virgil's type specifier.
+
+    LISP-VALUE
+          A translated value.
+
+     *Implementor's note:* _`convert' and `translate' only operate on
+     immediate and primitive types_
+
+ -- Function: alloc typespec &optional value => pointer
+     Allocates enough memory to hold the value of type denoted by
+     TYPESPEC.  This function accepts an optional parameter - a value,
+     which is written to allocated memory. Unless this optional
+     parameter is supplied, this function writes a type's `prototype'
+     into allocated memory.  (`prototype' concept is explained later in
+     this manual).
+    TYPESPEC
+          A Virgil's type specifier.
+
+    VALUE
+          A lisp value, which is written to freshly allocated memory.
+
+    POINTER
+          A pointer to foreign memory.
+
+ -- Function: clean pointer lisp-value typespec
+     `Cleans' foreign memory, pointed by POINTER, but does not
+     deallocate it. The concept of `cleaning' a memory is roughly
+     equivalent to the concept of C++ `destructors' - one of the tasks
+     this function may perform is deallocatation of pointer slots in
+     structures and arrays, for example.
+    POINTER
+          A pointer to foreign memory.
+
+    LISP-VALUE
+          A value which was written to that memory.
+
+    TYPESPEC
+          A Virgil's type specifier.
+
+    THIS FUNCTION DOES NOT RETURN ANY USEFUL VALUES.
+
+ -- Function: free pointer &optional typespec
+     Deallocates a block of foreign memory, allocated for the type
+     denoted by `typespec'. Unless TYPESPEC is supplied, standard
+     deallocator is used.  This function does not `clean' a memory. For
+     such a task, use `clean' or `clean-and-free' functions.
+    POINTER
+          A pointer to foreign memory.
+
+    TYPESPEC
+          A Virgil's type specifier
+
+    THIS FUNCTION DOES NOT RETURN ANY USEFUL VALUES.
+     See also: *note Raw Memory Manipulation::.
+
+ -- Function: clean-and-free pointer value typespec
+     Cleans a block of foreign memory and deallocates it afterwards.
+    POINTER
+          A pointer to foreign memory.
+
+    VALUE
+          A lisp value which was previously written to that memory.
+
+    TYPESPEC
+          A Virgil's type specifier.
+
+    THIS FUNCTION DOES NOT RETURN ANY USEFUL VALUES.
+
+ -- Accessor: deref pointer typespec &optional offset output =>
+          lisp-value
+     `deref' function dereferences a memory pointed by POINTER and
+     reads a lisp value of type denoted by TYPESPEC. When OUTPUT
+     parameter is present, and not equals to `NIL', the result of the
+     marshaling operation is stored into value denoted by this
+     parameter, and this value becomes function's return value. In this
+     case, TYPESPEC must denote some aggregate type.
+
+     `(setf deref)' function performs an inverse operation: it
+     dereferences a foreign memory pointed by POINTER and writes a
+     `lisp-value' into it, accordingly to marshaling rules denoted by
+     TYPESPEC.
+
+          *Implementor's note:* _`(setf deref)' does not have OUTPUT
+          parameter, for obvious reasons._
+
+    POINTER
+          A pointer to foreign memory.
+
+    TYPESPEC
+          A Virgil's type specifier.
+
+    OFFSET
+          An integer, defaults to 0.
+
+    OUTPUT
+          A lisp value, defaults to NIL.
+
+    LISP-VALUE
+          A lisp value of type denoted by `typespec'.
+
+ -- Macro: with-reference (var-or-vars value-var typespec &optional
+          mode nullable) &body body => values
+     Executes BODY forms in dynamic environment where VAR is bound to
+     the pointer to memory allocated for the value of type denoted by
+     `typespec'.
+
+     This macro roughly emulates behavior of C++ references. Have a
+     look at examples below.
+
+     Note that VAR pointer is invalid outside the macro scope, because
+     the memory allocated to this pointer is freed after the dynamic
+     environment exits.  Moreover, this macro performs `clean'
+     operation before exiting dynamic environment, so, for example,
+     internal pointers in structures also become invalid outside the
+     scope.
+    VAR-OR-VARS
+          ::= VAR | (VAR SIZE-VAR)
+
+    VAR
+          A symbol naming a variable which is bound to the pointer to
+          memory allocated for value denoted by VALUE-VAR. Not
+          evaluated.
+
+    SIZE-VAR
+          A symbol naming a variable which is bound to an integer that
+          represents the size(in bytes) of the memory pointed by VAR
+          pointer. Not evaluated.
+
+    VALUE-VAR
+          A symbol naming a variable which holds a value of type
+          denoted by TYPESPEC. Not evaluated.
+
+    TYPESPEC
+          A Virgil's type specifier. Evaluated.
+
+    MODE
+          A symbol, one of `:in', `:out', `:inout'.  Defaults to `:in'.
+          Not evaluated.  This parameter represents a type of
+          marshaling to be performed - `copy-in', `copy-out', or
+          `copy-in-copy-out' respectively.
+
+               *Implementor's note:* _on some lisp systems, with
+               certain types of arrays copying is avoided.  On such
+               systems `:virgil.shareable-arrays' will be present in
+               *FEATURES*_
+
+    NULLABLE
+          Unless this parameter equals to `NIL', value represented by
+          VALUE-VAR can be a special constant `VOID', which denotes a
+          NULL reference.  In this case, VAR is bound to NULL pointer,
+          and SIZE-VAR is bound to 0.  This parameter is not evaluated.
+
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+          *Implementor's note:* _If TYPESPEC denotes a foreign type of
+          fixed size(that is, all values of this type occupy the same
+          number of bytes in memory), memory may be allocated on stack._
+
+
+ -- Macro: with-references (&rest specs) &body body => values
+    SPECS
+          A list of parameter specifications. Each one corresponds to
+          single `with-reference' parameter form.
+
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+ -- Macro: with-pointer (var-or-vars value typespec &optional mode
+          nullable) &body body => values
+     Equivalent to `with-reference' but VALUE parameter denotes a value
+     itself, not a variable name, and is evaluated.
+
+ -- Macro: with-pointers (&rest specs) &body body => values
+     Equivalent to `with-references' but each VALUE parameter denotes a
+     value itself, not a variable name, and is evaluated.
+
+ -- Macro: with-value (var pointer typespec &optional mode nullable)
+          &body body => values
+     An opposite operation, compared to `with-reference'.  Executes
+     BODY forms in dynamic environment where VAR is bound to value that
+     corresponds to lisp representation of memory pointed by POINTER.
+    VAR
+          A symbol, naming a variable which is bound to lisp value. Not
+          evaluated.
+
+    POINTER
+          A foreign pointer. Evaluated.
+
+    TYPESPEC
+          A Virgil's type specifier. Evaluated.
+
+    MODE
+          A symbol, one of `:in', `:out', `:inout'. Not evaluated.
+          Defaults to `:in'.  `:in' correspond to `copy-in' operation -
+          a data is readen from POINTER(as with `deref') and is bound
+          to VAR.  `:out' correspond to `copy-out' operaton - a lisp
+          value which is bound to VAR during the execution of BODY forms
+          is written into foreign memory pointed by POINTER.  `:inout'
+          correspond to combination of this operations.
+
+    NULLABLE
+          Unless this parameter equals to NIL, POINTER may be equal to
+          NULL pointer, and VAR may be bound to special constant
+          `VOID', which represents NULL reference.  Wherever one of
+          these conditions occurs, no marshaling is performed.  This
+          parameter is not evaluated.
+
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+ -- Macro: with-values (&rest specs) &body body => values
+    SPECS
+          A list of parameter specifications. Each one corresponds to
+          single `with-value' parameter form.
+
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+Examples
+========
+
+  (sizeof 'uint32)
+  => 4
+
+  (alignof 'byte)
+  => 1
+
+  (offsetof '(struct ()
+               (x float)
+               (y float)
+               (z float))
+            'z)
+  => 8
+
+  (convert #\A 'char)
+  => 65
+
+  (translate 1 'boolean)
+  => T
+
+  (let* ((list '("Hello, " "world!"))
+         (pointer (alloc '(sequence (& string)) list)))
+    (unwind-protect
+        (concatenate 'string
+                     (deref pointer '(& string))
+                     (deref pointer '(& string) (sizeof 'pointer)))
+      (clean-and-free pointer list '(sequence (& string)))))
+  => "Hello, world!"
+
+  (let ((x 1))
+    (with-reference (p x 'int :inout)
+      (with-value (val p 'int :inout)
+        (incf val)))
+    x)
+  => 2
+
+4.2 Raw Memory Manipulation
+===========================
+
+Sometimes it is neccessary to directly manipulate foreign memory.  This
+section describes functions and macros that are used to allocate and
+free uninitialized memory, as well as ones that are used in pointer
+arithmetic.
+
+ -- Function: & address => pointer
+     Constructs a foreign pointer from ADDRESS.
+    ADDRESS
+          A non-negative integer.
+
+    POINTER
+          A foreign pointer.
+
+ -- Function: && pointer => address
+     Returns an integer representation of a POINTER.
+    POINTER
+          A foreign pointer.
+
+    ADDRESS
+          A non-negative integer.
+
+ -- Function: &p object => T or NIL
+     A predicate for a pointer.  Returns `T' if an OBJECT is a foreign
+     pointer and `NIL' otherwise.
+
+ -- Function: &? pointer => T or NIL
+     A predicate for a non-NULL pointer.  Returns `NIL' if a POINTER is
+     a NULL pointer and `T' otherwise.
+
+ -- Function: &= pointer1 pointer2 => T or NIL
+     Pointer comparator.  Returns `T' if POINTER1 points to the same
+     location in memory as POINTER2 and `NIL' otherwise.
+
+ -- Function: &0 => a NULL pointer
+     Returns a NULL pointer.  The symbol `&0' also denotes a
+     corresponding symbol macro
+     (http://l1sp.org/cl/define-symbol-macro).
+
+ -- Function: &+ pointer offset &optional typespec => new-pointer
+     Increments a POINTER by an OFFSET.  If TYPESPEC parameter is
+     supplied, offset is measured in sizes of type denoted by it,
+     otherwise offset is measured in bytes.
+
+ -- Function: &- pointer offset &optional typespec => new-pointer
+     Decrements a POINTER by an OFFSET.  If TYPESPEC parameter is
+     supplied, offset is measured in sizes of type denoted by it,
+     otherwise offset is measured in bytes.
+
+ -- Function: raw-alloc size => pointer
+     Allocates SIZE bytes of foreign memory.
+    SIZE
+          A non-negative integer,
+
+    POINTER
+          A foreign pointer.
+
+ -- Function: raw-free pointer
+     Deallocates a block of foreign memory that was previously
+     allocated by `raw-alloc'.
+    POINTER
+          A foreign pointer
+
+    THIS FUNCTION DOES NOT RETURN ANY USEFUL VALUES.
+
+ -- Macro: with-raw-pointer (var size &optional size-var) &body body =>
+          values
+     Executes BODY forms in dynamic environment where VAR is bound to a
+     pointer to a block of foreign memory of SIZE bytes.
+
+     Note that VAR pointer is invalid outside the macro scope, because
+     the memory allocated to this pointer is freed after the dynamic
+     environment exits.
+    VAR
+          A symbol denoting a variable name that is bound to a pointer.
+          Not evaluated.
+
+    SIZE
+          A non-negative integer. Evaluated.
+
+    SIZE-VAR
+          An optional parameter that denotes a variable name that is
+          bound to the result of evaluation of SIZE parameter. Not
+          evaluated.
+
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+          *Implementor's note:* _If SIZE parameter is a constant
+          expression, memory may be allocated on stack._
+
+
+ -- Macro: with-raw-pointers (&rest specs) &body body => values
+    SPECS
+          A list of parameter specifications. Each one corresponds to
+          single `with-raw-pointer' parameter form.
+
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+Examples
+========
+
+  (&& &0)
+  => 0
+
+  (&= &0 (&- (& 1) 1))
+  => T
+
+  (with-raw-pointer (p 100 size)
+    (when (/= 0 (external-function-call
+                  #+windows "_snprintf"
+                  #-windows "snprintf"
+                  ((:cdecl) (int)
+                   (pointer buffer)
+                   (size-t size)
+                   ((& string) format)
+                   (int x)
+                   (int y)
+                   (int z))
+                  p size "%d+%d=%d" 1 2 (+ 1 2)))
+      (deref p 'string)))
+  => "1+2=3"
+
+4.3 Handling Circular References
+================================
+
+Vigil is able to automatically marshal circular structures that occur
+either in lisp or in foreign memory. However, due to the fact that the
+process of tracing circular references has a significant performance
+impact, it is disabled by default.
+
+   You can control the mentioned process by the means of one of the
+following functions and macros:
+
+ -- Function: enable-circular-references
+     Enables the process of circular reference tracing in the current
+     dynamic environment (either global or established by the means of
+     `with-circular-references' or `without-curcular-references')
+    THIS FUNCTION DOES NOT RETURN ANY USEFUL VALUES.
+
+ -- Function: disable-circular-references
+     Disables the process of circular reference tracing in the current
+     dynamic environment (either global or established by the means of
+     `with-circular-references' or `without-curcular-references')
+    THIS FUNCTION DOES NOT RETURN ANY USEFUL VALUES.
+
+ -- Function: clear-circular-reference-cache
+     Clears the internal cache of circular references in the current
+     dynamic environment (either global or established by the means of
+     `with-circular-references' or `without-curcular-references')
+    THIS FUNCTION DOES NOT RETURN ANY USEFUL VALUES.
+
+ -- Macro: with-circular-references &body body => values
+     Executes BODY forms in the dynamic environment where the process
+     of circular reference tracing is enabled.
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+ -- Macro: without-circular-references &body body => values
+     Executes BODY forms in the dynamic environment where the process
+     of circular reference tracing is disabled.
+    BODY
+          A list of forms to be executed.
+
+    VALUES
+          Values returned by last form in BODY.
+
+Example
+=======
+
+  (define-struct node
+    (data int)
+    (next (& node :in t)))
+
+  ;;  Reference types(`&') will be explained later
+  ;;  in this manual. Third parameter of this typespec
+  ;;  designates whether a reference is nullable or not.
+
+  (with-circular-references
+    (let* ((circle (make-node)))
+      (setf (node-next circle) circle)
+      (with-pointer (p circle 'node)
+        (let ((node (deref p 'node)))
+          (eq node (node-next node))))))
+  => T
+
+5 Translators and Translatable Types
+************************************
+
+TODO
+
+5.1 Translators
+===============
+
+TODO
+
+5.2 Defining and Parsing Type Specifiers
+========================================
+
+TODO
+
+5.3 Primitive Types
+===================
+
+TODO
+
+5.4 Immediate Types
+===================
+
+TODO
+
+5.5 Aggregate Types
+===================
+
+TODO
+
+5.6 Proxy Types
+===============
+
+TODO
+
+6 Built-in Types
+****************
+
+TODO
+
+6.1 Built-in Primitives
+=======================
+
+TODO
+
+6.2 References
+==============
+
+TODO
+
+6.3 Arrays and Sequences
+========================
+
+TODO
+
+6.4 Enumerations
+================
+
+TODO
+
+6.5 Structures and Unions
+=========================
+
+TODO
+
+6.6 Strings
+===========
+
+TODO
+
+6.7 Strictly Aligned Types
+==========================
+
+TODO
+
+6.8 Filtered Types
+==================
+
+TODO
+
+6.9 Const Types
+===============
+
+TODO
+
+7 Functions
+***********
+
+TODO
+
+8 Symbols Re-Exported from CFFI
+*******************************
+
+TODO
+
+Appendix A Glossary
+*******************
+
+TODO
+
+Index
+*****
+
+&:                                             See 4.2.       (line 515)
+&&:                                            See 4.2.       (line 523)
+&+:                                            See 4.2.       (line 547)
+&-:                                            See 4.2.       (line 553)
+&0:                                            See 4.2.       (line 543)
+&=:                                            See 4.2.       (line 539)
+&?:                                            See 4.2.       (line 535)
+&p:                                            See 4.2.       (line 530)
+alexandria:                                    See 2.         (line 115)
+alignof:                                       See 4.1.       (line 199)
+alloc:                                         See 4.1.       (line 245)
+babel:                                         See 2.         (line 113)
+CFFI:                                          See 2.         (line 111)
+clean:                                         See 4.1.       (line 261)
+clean-and-free:                                See 4.1.       (line 293)
+cleaning a memory:                             See 4.1.       (line 262)
+clear-circular-reference-cache:                See 4.3.       (line 662)
+convert:                                       See 4.1.       (line 219)
+defalias:                                      See 4.         (line 151)
+deref:                                         See 4.1.       (line 305)
+disable-circular-references:                   See 4.3.       (line 655)
+enable-circular-references:                    See 4.3.       (line 649)
+free:                                          See 4.1.       (line 279)
+offsetof:                                      See 4.1.       (line 208)
+quicklisp:                                     See 2.         (line 118)
+raw-alloc:                                     See 4.2.       (line 557)
+raw-free:                                      See 4.2.       (line 566)
+sizeof:                                        See 4.1.       (line 185)
+translate:                                     See 4.1.       (line 231)
+trivial-features:                              See 2.         (line 117)
+with-circular-references:                      See 4.3.       (line 667)
+with-pointer:                                  See 4.1.       (line 411)
+with-pointers:                                 See 4.1.       (line 417)
+with-raw-pointer:                              See 4.2.       (line 573)
+with-raw-pointers:                             See 4.2.       (line 603)
+with-reference:                                See 4.1.       (line 337)
+with-references:                               See 4.1.       (line 400)
+with-value:                                    See 4.1.       (line 420)
+with-values:                                   See 4.1.       (line 457)
+without-circular-references:                   See 4.3.       (line 677)
+
+
+Local Variables:
+coding: utf-8
+End:

@@ -5,3 +5,13 @@
 *.lx64fsl
 *.x86f
 *.wx64fsl
+doc/virgil-manual.aux
+doc/virgil-manual.cp
+doc/virgil-manual.fn
+doc/virgil-manual.info
+doc/virgil-manual.ky
+doc/virgil-manual.log
+doc/virgil-manual.pg
+doc/virgil-manual.toc
+doc/virgil-manual.tp
+doc/virgil-manual.vr

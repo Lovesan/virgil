@@ -1,0 +1,272 @@
+<html lang="en">
+<head>
+<title>Raw Memory Manipulation - Virgil User Manual</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="description" content="Virgil User Manual">
+<meta name="generator" content="makeinfo 4.13">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="User_002dlevel-API.html#User_002dlevel-API" title="User-level API">
+<link rel="prev" href="User_002dlevel-Translators.html#User_002dlevel-Translators" title="User-level Translators">
+<link rel="next" href="Handling-Circular-References.html#Handling-Circular-References" title="Handling Circular References">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<!--
+Copyright (C) 2010-2012, Dmitry Ignatiev <lovesan.ru at gmail.com>
+
+
+     Permission is hereby granted, free of charge, to any person
+     obtaining a copy of this software and associated documentation
+     files (the "Software"), to deal in the Software without
+     restriction, including without limitation the rights to use, copy,
+     modify, merge, publish, distribute, sublicense, and/or sell copies
+     of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be
+     included in all copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+     DEALINGS IN THE SOFTWARE.
+-->
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+body {font-family: century schoolbook, serif;
+      line-height: 1.3;
+      padding-left: 5em; padding-right: 1em;
+      padding-bottom: 1em; max-width: 60em;}
+table {border-collapse: collapse}
+span.roman { font-family: century schoolbook, serif; font-weight: normal; }
+h1, h2, h3, h4, h5, h6 {font-family:  Helvetica, sans-serif}
+h4 { margin-top: 2.5em; }
+dfn {font-family: inherit; font-variant: italic; font-weight: bolder }
+kbd {font-family: monospace; text-decoration: underline}
+/*var {font-family: Helvetica, sans-serif; font-variant: slanted}*/
+var {font-variant: slanted;}
+td  {padding-right: 1em; padding-left: 1em}
+sub {font-size: smaller}
+.node {padding: 0; margin: 0}
+
+.lisp { font-family: monospace;
+        background-color: #F4F4F4; border: 1px solid #AAA;
+        padding-top: 0.5em; padding-bottom: 0.5em; }
+
+/* coloring */
+
+.lisp-bg { background-color: #F4F4F4 ; color: black; }
+.lisp-bg:hover { background-color: #F4F4F4 ; color: black; }
+
+.symbol { font-weight: bold; color: #770055; background-color : transparent; border: 0px; margin: 0px;}
+a.symbol:link { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:active { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:visited { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:hover { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+.special { font-weight: bold; color: #FF5000; background-color: inherit; }
+.keyword { font-weight: bold; color: #770000; background-color: inherit; }
+.comment { font-weight: normal; color: #007777; background-color: inherit; }
+.string  { font-weight: bold; color: #777777; background-color: inherit; }
+.character   { font-weight: bold; color: #0055AA; background-color: inherit; }
+.syntaxerror { font-weight: bold; color: #FF0000; background-color: inherit; }
+span.paren1 { font-weight: bold; color: #777777; }
+span.paren1:hover { color: #777777; background-color: #BAFFFF; }
+span.paren2 { color: #777777; }
+span.paren2:hover { color: #777777; background-color: #FFCACA; }
+span.paren3 { color: #777777; }
+span.paren3:hover { color: #777777; background-color: #FFFFBA; }
+span.paren4 { color: #777777; }
+span.paren4:hover { color: #777777; background-color: #CACAFF; }
+span.paren5 { color: #777777; }
+span.paren5:hover { color: #777777; background-color: #CAFFCA; }
+span.paren6 { color: #777777; }
+span.paren6:hover { color: #777777; background-color: #FFBAFF; }
+--></style>
+</head>
+<body>
+<div class="node">
+<a name="Raw-Memory-Manipulation"></a>
+<p>
+Next:&nbsp;<a rel="next" accesskey="n" href="Handling-Circular-References.html#Handling-Circular-References">Handling Circular References</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="User_002dlevel-Translators.html#User_002dlevel-Translators">User-level Translators</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="User_002dlevel-API.html#User_002dlevel-API">User-level API</a>
+<hr>
+</div>
+
+<h3 class="section">4.2 Raw Memory Manipulation</h3>
+
+<p>Sometimes it is neccessary to directly manipulate foreign memory. 
+This section describes functions and macros that are used to
+allocate and free uninitialized memory, as well as ones that are
+used in pointer arithmetic.
+
+   <p><a name="index-g_t_0026-41"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;</b><var> address &rArr; pointer<a name="index-g_t_0026-42"></a></var><br>
+<blockquote><p>Constructs a foreign pointer from <var>address</var>.
+          <dl>
+<dt><var>address</var><dd>A non-negative integer. 
+<br><dt><var>pointer</var><dd>A foreign pointer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-g_t_0026_0026-43"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;&amp;</b><var> pointer &rArr; address<a name="index-g_t_0026_0026-44"></a></var><br>
+<blockquote><p>Returns an integer representation of a <var>pointer</var>.
+          <dl>
+<dt><var>pointer</var><dd>A foreign pointer. 
+<br><dt><var>address</var><dd>A non-negative integer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-g_t_0026p-45"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;p</b><var> object &rArr; T or NIL<a name="index-g_t_0026p-46"></a></var><br>
+<blockquote><p>A predicate for a pointer. 
+Returns <code>T</code> if an <var>object</var> is a foreign pointer
+and <code>NIL</code> otherwise. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_003f-47"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;?</b><var> pointer &rArr; T or NIL<a name="index-g_t_0026_003f-48"></a></var><br>
+<blockquote><p>A predicate for a non-NULL pointer. 
+Returns <code>NIL</code> if a <var>pointer</var> is a NULL pointer
+and <code>T</code> otherwise. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_003d-49"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;=</b><var> pointer1 pointer2 &rArr; T or NIL<a name="index-g_t_0026_003d-50"></a></var><br>
+<blockquote><p>Pointer comparator. 
+Returns <code>T</code> if <var>pointer1</var> points to the same
+location in memory as <var>pointer2</var> and <code>NIL</code> otherwise. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_00260-51"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;0</b><var> &rArr; a NULL pointer<a name="index-g_t_00260-52"></a></var><br>
+<blockquote><p>Returns a NULL pointer. 
+The symbol <code>&amp;0</code> also denotes a corresponding
+<a href="http://l1sp.org/cl/define-symbol-macro">symbol macro</a>. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_002b-53"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;+</b><var> pointer offset &amp;optional typespec &rArr; new-pointer<a name="index-g_t_0026_002b-54"></a></var><br>
+<blockquote><p>Increments a <var>pointer</var> by an <var>offset</var>. 
+If <var>typespec</var> parameter is supplied, offset is measured in
+sizes of type denoted by it, otherwise offset is measured in bytes. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_002d-55"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;-</b><var> pointer offset &amp;optional typespec &rArr; new-pointer<a name="index-g_t_0026_002d-56"></a></var><br>
+<blockquote><p>Decrements a <var>pointer</var> by an <var>offset</var>. 
+If <var>typespec</var> parameter is supplied, offset is measured in
+sizes of type denoted by it, otherwise offset is measured in bytes. 
+</p></blockquote></div>
+
+   <p><a name="index-raw_002dalloc-57"></a>
+
+<div class="defun">
+&mdash; Function: <b>raw-alloc</b><var> size &rArr; pointer<a name="index-raw_002dalloc-58"></a></var><br>
+<blockquote><p>Allocates <var>size</var> bytes of foreign memory.
+          <dl>
+<dt><var>size</var><dd>A non-negative integer,
+<br><dt><var>pointer</var><dd>A foreign pointer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-raw_002dfree-59"></a>
+
+<div class="defun">
+&mdash; Function: <b>raw-free</b><var> pointer<a name="index-raw_002dfree-60"></a></var><br>
+<blockquote><p>Deallocates a block of foreign memory
+that was previously allocated by <code>raw-alloc</code>.
+          <dl>
+<dt><var>pointer</var><dd>A foreign pointer
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002draw_002dpointer-61"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-raw-pointer</b> (<var>var size &amp;optional size-var</var>)<var> &amp;body body &rArr; values<a name="index-with_002draw_002dpointer-62"></a></var><br>
+<blockquote><p>Executes <var>body</var> forms in dynamic environment where <var>var</var>
+is bound to a pointer to a block of foreign memory of <var>size</var> bytes.
+
+        <p>Note that <var>var</var> pointer is invalid outside the macro scope, because
+the memory allocated to this pointer is freed after the dynamic environment exits.
+          <dl>
+<dt><var>var</var><dd>A symbol denoting a variable name that is bound to a pointer. Not evaluated. 
+<br><dt><var>size</var><dd>A non-negative integer. Evaluated. 
+<br><dt><var>size-var</var><dd>An optional parameter that denotes a variable name that is bound
+to the result of evaluation of <var>size</var> parameter. Not evaluated. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        <blockquote>
+<strong>Implementor's note:</strong> <em>If </em><var>size</var><em> parameter is a constant expression, memory may be
+allocated on stack.</em>
+</blockquote>
+
+        </blockquote></div>
+
+   <p><a name="index-with_002draw_002dpointers-63"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-raw-pointers</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002draw_002dpointers-64"></a></var><br>
+<blockquote><dl>
+<dt><var>specs</var><dd>A list of parameter specifications. Each one corresponds to single
+<code>with-raw-pointer</code> parameter form. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+<h3 class="heading">Examples</h3>
+
+<pre class="lisp">  (&amp;&amp; &amp;0)
+  =&gt; 0
+  
+  (&amp;= &amp;0 (&amp;- (&amp; 1) 1))
+  =&gt; T
+  
+  (with-raw-pointer (p 100 size)
+    (when (/= 0 (external-function-call
+                  #+windows "_snprintf"
+                  #-windows "snprintf"
+                  ((:cdecl) (int)
+                   (pointer buffer)
+                   (size-t size)
+                   ((&amp; string) format)
+                   (int x)
+                   (int y)
+                   (int z))
+                  p size "%d+%d=%d" 1 2 (+ 1 2)))
+      (deref p 'string)))
+  =&gt; "1+2=3"
+</pre>
+   </body></html>
+

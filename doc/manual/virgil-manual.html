@@ -1,0 +1,1270 @@
+<html lang="en">
+<head>
+<title>Virgil User Manual</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="description" content="Virgil User Manual">
+<meta name="generator" content="makeinfo 4.13">
+<link title="Top" rel="top" href="#Top">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<!--
+Copyright (C) 2010-2012, Dmitry Ignatiev <lovesan.ru at gmail.com>
+
+
+     Permission is hereby granted, free of charge, to any person
+     obtaining a copy of this software and associated documentation
+     files (the "Software"), to deal in the Software without
+     restriction, including without limitation the rights to use, copy,
+     modify, merge, publish, distribute, sublicense, and/or sell copies
+     of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be
+     included in all copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+     DEALINGS IN THE SOFTWARE.
+-->
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+body {font-family: century schoolbook, serif;
+      line-height: 1.3;
+      padding-left: 5em; padding-right: 1em;
+      padding-bottom: 1em; max-width: 60em;}
+table {border-collapse: collapse}
+span.roman { font-family: century schoolbook, serif; font-weight: normal; }
+h1, h2, h3, h4, h5, h6 {font-family:  Helvetica, sans-serif}
+h4 { margin-top: 2.5em; }
+dfn {font-family: inherit; font-variant: italic; font-weight: bolder }
+kbd {font-family: monospace; text-decoration: underline}
+/*var {font-family: Helvetica, sans-serif; font-variant: slanted}*/
+var {font-variant: slanted;}
+td  {padding-right: 1em; padding-left: 1em}
+sub {font-size: smaller}
+.node {padding: 0; margin: 0}
+
+.lisp { font-family: monospace;
+        background-color: #F4F4F4; border: 1px solid #AAA;
+        padding-top: 0.5em; padding-bottom: 0.5em; }
+
+/* coloring */
+
+.lisp-bg { background-color: #F4F4F4 ; color: black; }
+.lisp-bg:hover { background-color: #F4F4F4 ; color: black; }
+
+.symbol { font-weight: bold; color: #770055; background-color : transparent; border: 0px; margin: 0px;}
+a.symbol:link { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:active { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:visited { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:hover { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+.special { font-weight: bold; color: #FF5000; background-color: inherit; }
+.keyword { font-weight: bold; color: #770000; background-color: inherit; }
+.comment { font-weight: normal; color: #007777; background-color: inherit; }
+.string  { font-weight: bold; color: #777777; background-color: inherit; }
+.character   { font-weight: bold; color: #0055AA; background-color: inherit; }
+.syntaxerror { font-weight: bold; color: #FF0000; background-color: inherit; }
+span.paren1 { font-weight: bold; color: #777777; }
+span.paren1:hover { color: #777777; background-color: #BAFFFF; }
+span.paren2 { color: #777777; }
+span.paren2:hover { color: #777777; background-color: #FFCACA; }
+span.paren3 { color: #777777; }
+span.paren3:hover { color: #777777; background-color: #FFFFBA; }
+span.paren4 { color: #777777; }
+span.paren4:hover { color: #777777; background-color: #CACAFF; }
+span.paren5 { color: #777777; }
+span.paren5:hover { color: #777777; background-color: #CAFFCA; }
+span.paren6 { color: #777777; }
+span.paren6:hover { color: #777777; background-color: #FFBAFF; }
+--></style>
+</head>
+<body>
+<h1 class="settitle">Virgil User Manual</h1>
+   <div class="contents">
+<h2>Table of Contents</h2>
+<ul>
+<li><a name="toc_Top" href="#Top">Virgil</a>
+<li><a name="toc_Introduction" href="#Introduction">1 Introduction</a>
+<li><a name="toc_Installation-and-Prerequisites" href="#Installation-and-Prerequisites">2 Installation and Prerequisites</a>
+<li><a name="toc_Tutorial" href="#Tutorial">3 Tutorial</a>
+<li><a name="toc_User_002dlevel-API" href="#User_002dlevel-API">4 User-level API</a>
+<ul>
+<li><a href="#User_002dlevel-Translators">4.1 User-level Translators</a>
+<li><a href="#Raw-Memory-Manipulation">4.2 Raw Memory Manipulation</a>
+<li><a href="#Handling-Circular-References">4.3 Handling Circular References</a>
+</li></ul>
+<li><a name="toc_Translators-and-Translatable-Types" href="#Translators-and-Translatable-Types">5 Translators and Translatable Types</a>
+<ul>
+<li><a href="#Translators">5.1 Translators</a>
+<li><a href="#Defining-and-Parsing-Type-Specifiers">5.2 Defining and Parsing Type Specifiers</a>
+<li><a href="#Primitive-Types">5.3 Primitive Types</a>
+<li><a href="#Immediate-Types">5.4 Immediate Types</a>
+<li><a href="#Aggregate-Types">5.5 Aggregate Types</a>
+<li><a href="#Proxy-Types">5.6 Proxy Types</a>
+</li></ul>
+<li><a name="toc_Built_002din-Types" href="#Built_002din-Types">6 Built-in Types</a>
+<ul>
+<li><a href="#Built_002din-Primitives">6.1 Built-in Primitives</a>
+<li><a href="#References">6.2 References</a>
+<li><a href="#Arrays-and-Sequences">6.3 Arrays and Sequences</a>
+<li><a href="#Enumerations">6.4 Enumerations</a>
+<li><a href="#Structures-and-Unions">6.5 Structures and Unions</a>
+<li><a href="#Strings">6.6 Strings</a>
+<li><a href="#Strictly-Aligned-Types">6.7 Strictly Aligned Types</a>
+<li><a href="#Filtered-Types">6.8 Filtered Types</a>
+<li><a href="#Const-Types">6.9 Const Types</a>
+</li></ul>
+<li><a name="toc_Functions" href="#Functions">7 Functions</a>
+<li><a name="toc_Symbols-Re_002dExported-from-CFFI" href="#Symbols-Re_002dExported-from-CFFI">8 Symbols Re-Exported from CFFI</a>
+<li><a name="toc_Glossary" href="#Glossary">Appendix A Glossary</a>
+<li><a name="toc_Comprehensive-Index" href="#Comprehensive-Index">Index</a>
+</li></ul>
+</div>
+
+
+
+<div class="node">
+<a name="Top"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Introduction">Introduction</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#dir">(dir)</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#dir">(dir)</a>
+
+</div>
+
+<h2 class="unnumbered">Virgil</h2>
+
+<p>Copyright &copy; 2010-2012, Dmitry Ignatiev &lt;lovesan.ru at gmail.com&gt; <br>
+
+   <blockquote>
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+   <p>The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+   <p><span class="sc">The software is provided &ldquo;as is&rdquo;, without warranty of any kind,
+express or implied, including but not limited to the warranties of
+merchantability, fitness for a particular purpose and noninfringement. 
+In no event shall the authors or copyright holders be liable for any
+claim, damages or other liability, whether in an action of contract,
+tort or otherwise, arising from, out of or in connection with the
+software or the use or other dealings in the software.</span>
+</blockquote>
+
+<ul class="menu">
+<li><a accesskey="1" href="#Introduction">Introduction</a>
+<li><a accesskey="2" href="#Installation-and-Prerequisites">Installation and Prerequisites</a>
+<li><a accesskey="3" href="#Tutorial">Tutorial</a>
+<li><a accesskey="4" href="#User_002dlevel-API">User-level API</a>
+<li><a accesskey="5" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>
+<li><a accesskey="6" href="#Built_002din-Types">Built-in Types</a>
+<li><a accesskey="7" href="#Functions">Functions</a>
+<li><a accesskey="8" href="#Symbols-Re_002dExported-from-CFFI">Symbols Re-Exported from CFFI</a>
+<li><a accesskey="9" href="#Glossary">Glossary</a>
+<li><a href="#Comprehensive-Index">Comprehensive Index</a>
+</ul>
+
+<div class="node">
+<a name="Introduction"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Installation-and-Prerequisites">Installation and Prerequisites</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Top">Top</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">1 Introduction</h2>
+
+<p>Virgil is an extensible and high-level foreign function interface(FFI)
+built on top of <acronym>CFFI</acronym> and oriented towards marshaling lisp data
+into raw unmanaged memory and back.
+
+   <p>Why the name `Virgil'? Well, have you read Dante's `Divine Comedy'? :)
+
+<h3 class="heading">Rationale</h3>
+
+<p>Why another FFI? <acronym>CFFI</acronym> seems perfect in terms of portability,
+but it exposes quite a low-level interface. <acronym>CFFI</acronym> is oriented towards
+manipulating foreign memory, and forces us to write `C-style' code in Lisp. 
+Remember the old joke - "You can write FORTRAN in any language"? 
+Using modern FFIs you can also write `C' in any language - but should you?
+
+   <p>Virgil, as opposed to <acronym>CFFI</acronym>, is oriented towards marshaling. 
+This means, Virgil does its best to free the programmer from
+messing up with pointers and the like, and allows to communicate
+with `native' code using Lisp data structures.
+
+   <p>Thus, the main difference between <acronym>CFFI</acronym> and Virgil is that Virgil provides
+convenient semantics for marshaling aggregate data types and strives to
+establish a one-to-one mapping between lisp types and foreign ones.
+
+   <p>Nevertheless, Virgil's interface is actually a bit similiar
+to that of <acronym>CFFI</acronym>, so you can easily start using it if you are familiar
+with the latter.
+
+   <blockquote>
+<strong>Implementor's note:</strong> <em>Virgil is not a kind of a replacement for <acronym>CFFI</acronym>, but instead a kind of a DSL on
+top of it.</em>
+</blockquote>
+
+<div class="node">
+<a name="Installation-and-Prerequisites"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Tutorial">Tutorial</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Introduction">Introduction</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">2 Installation and Prerequisites</h2>
+
+<p>Sources are available on github:
+     <ul>
+<li><a href="https://github.com/Lovesan/virgil">https://github.com/Lovesan/virgil</a>
+</ul>
+
+   <p>You can obtain them either using git, or by downloading latest zipball:
+     <ul>
+<li><a href="https://github.com/Lovesan/virgil/downloads">https://github.com/Lovesan/virgil/downloads</a>
+</ul>
+
+   <p>Virgil depends on <code><acronym>CFFI</acronym></code>, <code>alexandria</code>, <code>babel</code> and <code>trivial-features</code>. 
+Note that <acronym>CFFI</acronym> itself depends on the other three libraries.
+
+   <p>You can obtain all of them from their home pages:
+     <ul>
+<li><a name="index-CFFI-1"></a><a href="http://common-lisp.net/project/cffi/">http://common-lisp.net/project/cffi/</a>
+<li><a name="index-babel-2"></a><a href="http://common-lisp.net/project/babel/">http://common-lisp.net/project/babel/</a>
+<li><a name="index-alexandria-3"></a><a href="http://common-lisp.net/project/alexandria/">http://common-lisp.net/project/alexandria/</a>
+<li><a name="index-trivial_002dfeatures-4"></a><a href="http://www.cliki.net/trivial-features">http://www.cliki.net/trivial-features</a>
+</ul>
+   but i recommend to use Zach Bean's
+<a name="index-quicklisp-5"></a><a href="http://www.quicklisp.org/">quicklisp</a> - <code>(ql:quickload :cffi)</code>
+
+   <p>Note that at the moment Virgil only supports x86 and x86-64 platforms. 
+<a rel="footnote" href="#fn-1" name="fnd-1"><sup>1</sup></a>
+
+<div class="node">
+<a name="Tutorial"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#User_002dlevel-API">User-level API</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Installation-and-Prerequisites">Installation and Prerequisites</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">3 Tutorial</h2>
+
+<p>TODO
+
+<div class="node">
+<a name="User-level-API"></a>
+<a name="User_002dlevel-API"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Tutorial">Tutorial</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">4 User-level API</h2>
+
+<p>At the user level, marshaling engine utilizes
+a concept of <code>type specifier</code>, or <code>typespec</code> for short. 
+A <code>typespec</code> is an s-expression denoting some marshling rules to
+be applied to some `foreign' value, such as a pointer, to translate it into lisp,
+or to some lisp value to convert it to foreign one.
+
+   <p>Virgil's <code>type specifiers</code> are somewhat similiar to Common Lisp
+<code>type specifiers</code>, in the sense that they are represented
+either by a symbol denoting a type name or by a list,
+whose first elment is such a symbol.
+
+   <p>Virgil exposes a <a href="http://l1sp.org/cl/deftype">deftype</a>-like macro
+for establishing aliases for <code>typespecs</code>:
+
+   <p><a name="index-defalias-6"></a>
+
+<div class="defun">
+&mdash; Macro: <b>defalias</b><var> name lambda-list &amp;body body &rArr; name<a name="index-defalias-7"></a></var><br>
+<blockquote><dl>
+<dt><var>name</var><dd>A symbol. 
+<br><dt><var>lambda-list</var><dd>A function lambda-list. 
+<br><dt><var>body</var><dd>List of forms to be executed, preceded by an optional list of declarations. 
+</dl>
+        </p></blockquote></div>
+
+<h4 class="subheading">Example</h4>
+
+<pre class="lisp">  (defalias float4 (&amp;optional (float-type 'single-float))
+    `(simple-array ,float-type (4)))
+</pre>
+   <blockquote>
+<strong>Implementor's note:</strong> <em>You must not define recursive types with </em><code>defalias</code><em>. Recursive
+types are supported only in structures. </em><code>defalias</code><em>, not unlike </em><code>deftype</code><em>, is
+unable to handle them - lisp system will crash or hang.</em>
+</blockquote>
+
+<ul class="menu">
+<li><a accesskey="1" href="#User_002dlevel-Translators">User-level Translators</a>
+<li><a accesskey="2" href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a>
+<li><a accesskey="3" href="#Handling-Circular-References">Handling Circular References</a>
+</ul>
+
+<div class="node">
+<a name="User-level-Translators"></a>
+<a name="User_002dlevel-Translators"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#User_002dlevel-API">User-level API</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#User_002dlevel-API">User-level API</a>
+
+</div>
+
+<h3 class="section">4.1 User-level Translators</h3>
+
+<p>These functions and macros are used with <code>type specifiers</code>. 
+Each of them parses a <code>typespec</code> into some internal representation and
+performs relevant operation.
+
+   <p>Note that all of the functions mentioned here heavily utilize
+<a href="http://l1sp.org/cl/define-compiler-macro">compiler macros</a>,
+so you should pass a constant <code>typespec</code> argument to them wherever possible.
+
+   <p><a name="index-sizeof-8"></a>
+
+<div class="defun">
+&mdash; Function: <b>sizeof</b><var> typespec &amp;optional value &rArr; count<a name="index-sizeof-9"></a></var><br>
+<blockquote><p>Returns number of bytes required to store value of type denoted by type specifier. 
+This function also accepts optional argument - a lisp value which is used when
+the <var>typespec</var> denotes a variable-sized foreign type.
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>value</var><dd>A lisp value. 
+<br><dt><var>count</var><dd>A number of bytes required to store value of type denoted by <code>typespec</code>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-alignof-10"></a>
+
+<div class="defun">
+&mdash; Function: <b>alignof</b><var> typespec &rArr; alignment<a name="index-alignof-11"></a></var><br>
+<blockquote><p>Computes alignment of type denoted by <var>typespec</var>.
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>alignment</var><dd>A positive integer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-offsetof-12"></a>
+
+<div class="defun">
+&mdash; Function: <b>offsetof</b><var> typespec member &rArr; offset<a name="index-offsetof-13"></a></var><br>
+<blockquote><p>Computes offset(in bytes) of the specified structure's slot.
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier denoting a structure type. 
+<br><dt><var>member</var><dd>A symbol, denoting a structure's slot. 
+<br><dt><var>offset</var><dd>A non-negative integer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-convert-14"></a>
+
+<div class="defun">
+&mdash; Function: <b>convert</b><var> lisp-value typespec &rArr; foreign-value<a name="index-convert-15"></a></var><br>
+<blockquote><p>Converts a lisp value into foreign value.
+          <dl>
+<dt><var>lisp-value</var><dd>A lisp value. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>foreign-value</var><dd>A converted value. 
+<br><dt><var>typespec</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-translate-16"></a>
+
+<div class="defun">
+&mdash; Function: <b>translate</b><var> foreign-value typespec &rArr; lisp-value<a name="index-translate-17"></a></var><br>
+<blockquote><p>Translates a foreign value into lisp one.
+          <dl>
+<dt><var>foreign-value</var><dd>A foreign value. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>lisp-value</var><dd>A translated value. 
+</dl>
+        </p></blockquote></div>
+
+   <blockquote>
+<strong>Implementor's note:</strong> <code>convert</code><em> and </em><code>translate</code><em> only operate on immediate and primitive types</em>
+</blockquote>
+
+   <p><a name="index-alloc-18"></a>
+
+<div class="defun">
+&mdash; Function: <b>alloc</b><var> typespec &amp;optional value &rArr; pointer<a name="index-alloc-19"></a></var><br>
+<blockquote><p>Allocates enough memory to hold the value of type denoted by <var>typespec</var>. 
+This function accepts an optional parameter - a value, which is written
+to allocated memory. Unless this optional parameter is supplied,
+this function writes a type's <code>prototype</code> into allocated memory. 
+(<code>prototype</code> concept is explained later in this manual).
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>value</var><dd>A lisp value, which is written to freshly allocated memory. 
+<br><dt><var>pointer</var><dd>A pointer to foreign memory. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-clean-20"></a>
+
+<div class="defun">
+&mdash; Function: <b>clean</b><var> pointer lisp-value typespec<a name="index-clean-21"></a></var><br>
+<blockquote><p><a name="index-cleaning-a-memory-22"></a><code>Cleans</code> foreign memory, pointed by <var>pointer</var>, but does not
+deallocate it. The concept of <code>cleaning</code> a memory is roughly equivalent
+to the concept of C++ <code>destructors</code> - one of the tasks this function
+may perform is deallocatation of pointer slots in structures and arrays,
+for example.
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>lisp-value</var><dd>A value which was written to that memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-free-23"></a>
+
+<div class="defun">
+&mdash; Function: <b>free</b><var> pointer &amp;optional typespec<a name="index-free-24"></a></var><br>
+<blockquote><p>Deallocates a block of foreign memory, allocated for the type denoted by
+<code>typespec</code>. Unless <var>typespec</var> is supplied, standard deallocator is used. 
+This function does not <code>clean</code> a memory. For such a task, use <code>clean</code> or
+<code>clean-and-free</code> functions.
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        See also: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a>
+</p></blockquote></div>
+
+   <p><a name="index-clean_002dand_002dfree-25"></a>
+
+<div class="defun">
+&mdash; Function: <b>clean-and-free</b><var> pointer value typespec<a name="index-clean_002dand_002dfree-26"></a></var><br>
+<blockquote><p>Cleans a block of foreign memory and deallocates it afterwards.
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>value</var><dd>A lisp value which was previously written to that memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-deref-27"></a>
+
+<div class="defun">
+&mdash; Accessor: <b>deref</b><var> pointer typespec &amp;optional offset output &rArr; lisp-value<a name="index-deref-28"></a></var><br>
+<blockquote><p><code>deref</code> function dereferences a memory pointed by <var>pointer</var> and reads a lisp value
+of type denoted by <var>typespec</var>. When <var>output</var> parameter
+is present, and not equals to <code>NIL</code>, the result of the marshaling
+operation is stored into value denoted by this parameter, and this value
+becomes function's return value. In this case, <var>typespec</var> must denote some aggregate type.
+
+        <p><code>(setf deref)</code> function performs an inverse operation:
+it dereferences a foreign memory pointed by <var>pointer</var> and
+writes a <code>lisp-value</code> into it, accordingly to marshaling rules denoted by <var>typespec</var>. 
+<blockquote>
+<strong>Implementor's note:</strong> <code>(setf deref)</code><em> does not have </em><var>output</var><em> parameter, for obvious reasons.</em>
+</blockquote>
+
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>offset</var><dd>An integer, defaults to 0. 
+<br><dt><var>output</var><dd>A lisp value, defaults to NIL. 
+<br><dt><var>lisp-value</var><dd>A lisp value of type denoted by <code>typespec</code>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002dreference-29"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-reference</b> (<var>var-or-vars value-var typespec &amp;optional mode nullable</var>)<var> &amp;body body &rArr; values<a name="index-with_002dreference-30"></a></var><br>
+<blockquote><p>Executes <var>body</var> forms in dynamic environment where <var>var</var> is bound to the pointer to memory
+allocated for the value of type denoted by <code>typespec</code>.
+
+        <p>This macro roughly emulates behavior of C++ references. Have a look at examples below.
+
+        <p>Note that <var>var</var> pointer is invalid outside the macro scope, because
+the memory allocated to this pointer is freed after the dynamic environment exits. 
+Moreover, this macro performs <code>clean</code> operation before exiting dynamic environment,
+so, for example, internal pointers in structures also become invalid outside the scope.
+          <dl>
+<dt><var>var-or-vars</var><dd>::= <var>var</var> | (<var>var</var> <var>size-var</var>)
+<br><dt><var>var</var><dd>A symbol naming a variable which is bound to the pointer
+to memory allocated for value denoted by <var>value-var</var>. Not evaluated. 
+<br><dt><var>size-var</var><dd>A symbol naming a variable which is bound to an integer
+that represents the size(in bytes) of the memory pointed by <var>var</var> pointer. Not evaluated. 
+<br><dt><var>value-var</var><dd>A symbol naming a variable which holds a value of type
+denoted by <var>typespec</var>. Not evaluated. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. Evaluated. 
+<br><dt><var>mode</var><dd>A symbol, one of <code>:in</code>, <code>:out</code>, <code>:inout</code>. 
+Defaults to <code>:in</code>. Not evaluated. 
+This parameter represents a type of marshaling to be performed -
+<code>copy-in</code>, <code>copy-out</code>, or <code>copy-in-copy-out</code> respectively. 
+<blockquote>
+<strong>Implementor's note:</strong> <em>on some lisp systems, with certain types of arrays copying is avoided. 
+On such systems </em><code>:virgil.shareable-arrays</code><em>
+will be present in </em><var>*features*</var>
+</blockquote>
+
+          <br><dt><var>nullable</var><dd>Unless this parameter equals to <code>NIL</code>, value represented by
+<var>value-var</var> can be a special constant <code>VOID</code>, which denotes a NULL reference. 
+In this case, <var>var</var> is bound to NULL pointer, and <var>size-var</var> is bound to 0. 
+This parameter is not evaluated. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        <blockquote>
+<strong>Implementor's note:</strong> <em>If </em><var>typespec</var><em> denotes a foreign type of fixed size(that is, all values of this
+type occupy the same number of bytes in memory), memory may be allocated on stack.</em>
+</blockquote>
+
+        </blockquote></div>
+
+   <p><a name="index-with_002dreferences-31"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-references</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002dreferences-32"></a></var><br>
+<blockquote><dl>
+<dt><var>specs</var><dd>A list of parameter specifications. Each one corresponds to single
+<code>with-reference</code> parameter form. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002dpointer-33"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-pointer</b> (<var>var-or-vars value typespec &amp;optional mode nullable</var>)<var> &amp;body body &rArr; values<a name="index-with_002dpointer-34"></a></var><br>
+<blockquote><p>Equivalent to <code>with-reference</code> but <var>value</var> parameter denotes
+a value itself, not a variable name, and is evaluated. 
+</p></blockquote></div>
+
+   <p><a name="index-with_002dpointers-35"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-pointers</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002dpointers-36"></a></var><br>
+<blockquote><p>Equivalent to <code>with-references</code> but each <var>value</var> parameter denotes
+a value itself, not a variable name, and is evaluated. 
+</p></blockquote></div>
+
+   <p><a name="index-with_002dvalue-37"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-value</b> (<var>var pointer typespec &amp;optional mode nullable</var>)<var> &amp;body body &rArr; values<a name="index-with_002dvalue-38"></a></var><br>
+<blockquote><p>An opposite operation, compared to <code>with-reference</code>. 
+Executes <var>body</var> forms in dynamic environment where <var>var</var> is bound to value
+that corresponds to lisp representation of memory pointed by <var>pointer</var>.
+          <dl>
+<dt><var>var</var><dd>A symbol, naming a variable which is bound to lisp value. Not evaluated. 
+<br><dt><var>pointer</var><dd>A foreign pointer. Evaluated. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. Evaluated. 
+<br><dt><var>mode</var><dd>A symbol, one of <code>:in</code>, <code>:out</code>, <code>:inout</code>. Not evaluated. 
+Defaults to <code>:in</code>. 
+<code>:in</code> correspond to <code>copy-in</code> operation - a data is
+readen from <var>pointer</var>(as with <code>deref</code>) and is bound to <var>var</var>. 
+<code>:out</code> correspond to <code>copy-out</code> operaton - a lisp value
+which is bound to <var>var</var> during the execution of <var>body</var> forms
+is written into foreign memory pointed by <var>pointer</var>. 
+<code>:inout</code> correspond to combination of this operations. 
+<br><dt><var>nullable</var><dd>Unless this parameter equals to NIL, <var>pointer</var> may be equal to NULL pointer,
+and <var>var</var> may be bound to special constant <code>VOID</code>, which represents NULL reference. 
+Wherever one of these conditions occurs, no marshaling is performed. 
+This parameter is not evaluated. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002dvalues-39"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-values</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002dvalues-40"></a></var><br>
+<blockquote><dl>
+<dt><var>specs</var><dd>A list of parameter specifications. Each one corresponds to single
+<code>with-value</code> parameter form. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+<h3 class="heading">Examples</h3>
+
+<pre class="lisp">  (sizeof 'uint32)
+  =&gt; 4
+  
+  (alignof 'byte)
+  =&gt; 1
+  
+  (offsetof '(struct ()
+               (x float)
+               (y float)
+               (z float))
+            'z)
+  =&gt; 8
+  
+  (convert #\A 'char)
+  =&gt; 65
+  
+  (translate 1 'boolean)
+  =&gt; T
+  
+  (let* ((list '("Hello, " "world!"))
+         (pointer (alloc '(sequence (&amp; string)) list)))
+    (unwind-protect
+        (concatenate 'string
+                     (deref pointer '(&amp; string))
+                     (deref pointer '(&amp; string) (sizeof 'pointer)))
+      (clean-and-free pointer list '(sequence (&amp; string)))))
+  =&gt; "Hello, world!"
+  
+  (let ((x 1))
+    (with-reference (p x 'int :inout)
+      (with-value (val p 'int :inout)
+        (incf val)))
+    x)
+  =&gt; 2
+</pre>
+<div class="node">
+<a name="Raw-Memory-Manipulation"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Handling-Circular-References">Handling Circular References</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#User_002dlevel-Translators">User-level Translators</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#User_002dlevel-API">User-level API</a>
+
+</div>
+
+<h3 class="section">4.2 Raw Memory Manipulation</h3>
+
+<p>Sometimes it is neccessary to directly manipulate foreign memory. 
+This section describes functions and macros that are used to
+allocate and free uninitialized memory, as well as ones that are
+used in pointer arithmetic.
+
+   <p><a name="index-g_t_0026-41"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;</b><var> address &rArr; pointer<a name="index-g_t_0026-42"></a></var><br>
+<blockquote><p>Constructs a foreign pointer from <var>address</var>.
+          <dl>
+<dt><var>address</var><dd>A non-negative integer. 
+<br><dt><var>pointer</var><dd>A foreign pointer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-g_t_0026_0026-43"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;&amp;</b><var> pointer &rArr; address<a name="index-g_t_0026_0026-44"></a></var><br>
+<blockquote><p>Returns an integer representation of a <var>pointer</var>.
+          <dl>
+<dt><var>pointer</var><dd>A foreign pointer. 
+<br><dt><var>address</var><dd>A non-negative integer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-g_t_0026p-45"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;p</b><var> object &rArr; T or NIL<a name="index-g_t_0026p-46"></a></var><br>
+<blockquote><p>A predicate for a pointer. 
+Returns <code>T</code> if an <var>object</var> is a foreign pointer
+and <code>NIL</code> otherwise. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_003f-47"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;?</b><var> pointer &rArr; T or NIL<a name="index-g_t_0026_003f-48"></a></var><br>
+<blockquote><p>A predicate for a non-NULL pointer. 
+Returns <code>NIL</code> if a <var>pointer</var> is a NULL pointer
+and <code>T</code> otherwise. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_003d-49"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;=</b><var> pointer1 pointer2 &rArr; T or NIL<a name="index-g_t_0026_003d-50"></a></var><br>
+<blockquote><p>Pointer comparator. 
+Returns <code>T</code> if <var>pointer1</var> points to the same
+location in memory as <var>pointer2</var> and <code>NIL</code> otherwise. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_00260-51"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;0</b><var> &rArr; a NULL pointer<a name="index-g_t_00260-52"></a></var><br>
+<blockquote><p>Returns a NULL pointer. 
+The symbol <code>&amp;0</code> also denotes a corresponding
+<a href="http://l1sp.org/cl/define-symbol-macro">symbol macro</a>. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_002b-53"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;+</b><var> pointer offset &amp;optional typespec &rArr; new-pointer<a name="index-g_t_0026_002b-54"></a></var><br>
+<blockquote><p>Increments a <var>pointer</var> by an <var>offset</var>. 
+If <var>typespec</var> parameter is supplied, offset is measured in
+sizes of type denoted by it, otherwise offset is measured in bytes. 
+</p></blockquote></div>
+
+   <p><a name="index-g_t_0026_002d-55"></a>
+
+<div class="defun">
+&mdash; Function: <b>&amp;-</b><var> pointer offset &amp;optional typespec &rArr; new-pointer<a name="index-g_t_0026_002d-56"></a></var><br>
+<blockquote><p>Decrements a <var>pointer</var> by an <var>offset</var>. 
+If <var>typespec</var> parameter is supplied, offset is measured in
+sizes of type denoted by it, otherwise offset is measured in bytes. 
+</p></blockquote></div>
+
+   <p><a name="index-raw_002dalloc-57"></a>
+
+<div class="defun">
+&mdash; Function: <b>raw-alloc</b><var> size &rArr; pointer<a name="index-raw_002dalloc-58"></a></var><br>
+<blockquote><p>Allocates <var>size</var> bytes of foreign memory.
+          <dl>
+<dt><var>size</var><dd>A non-negative integer,
+<br><dt><var>pointer</var><dd>A foreign pointer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-raw_002dfree-59"></a>
+
+<div class="defun">
+&mdash; Function: <b>raw-free</b><var> pointer<a name="index-raw_002dfree-60"></a></var><br>
+<blockquote><p>Deallocates a block of foreign memory
+that was previously allocated by <code>raw-alloc</code>.
+          <dl>
+<dt><var>pointer</var><dd>A foreign pointer
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002draw_002dpointer-61"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-raw-pointer</b> (<var>var size &amp;optional size-var</var>)<var> &amp;body body &rArr; values<a name="index-with_002draw_002dpointer-62"></a></var><br>
+<blockquote><p>Executes <var>body</var> forms in dynamic environment where <var>var</var>
+is bound to a pointer to a block of foreign memory of <var>size</var> bytes.
+
+        <p>Note that <var>var</var> pointer is invalid outside the macro scope, because
+the memory allocated to this pointer is freed after the dynamic environment exits.
+          <dl>
+<dt><var>var</var><dd>A symbol denoting a variable name that is bound to a pointer. Not evaluated. 
+<br><dt><var>size</var><dd>A non-negative integer. Evaluated. 
+<br><dt><var>size-var</var><dd>An optional parameter that denotes a variable name that is bound
+to the result of evaluation of <var>size</var> parameter. Not evaluated. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        <blockquote>
+<strong>Implementor's note:</strong> <em>If </em><var>size</var><em> parameter is a constant expression, memory may be
+allocated on stack.</em>
+</blockquote>
+
+        </blockquote></div>
+
+   <p><a name="index-with_002draw_002dpointers-63"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-raw-pointers</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002draw_002dpointers-64"></a></var><br>
+<blockquote><dl>
+<dt><var>specs</var><dd>A list of parameter specifications. Each one corresponds to single
+<code>with-raw-pointer</code> parameter form. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+<h3 class="heading">Examples</h3>
+
+<pre class="lisp">  (&amp;&amp; &amp;0)
+  =&gt; 0
+  
+  (&amp;= &amp;0 (&amp;- (&amp; 1) 1))
+  =&gt; T
+  
+  (with-raw-pointer (p 100 size)
+    (when (/= 0 (external-function-call
+                  #+windows "_snprintf"
+                  #-windows "snprintf"
+                  ((:cdecl) (int)
+                   (pointer buffer)
+                   (size-t size)
+                   ((&amp; string) format)
+                   (int x)
+                   (int y)
+                   (int z))
+                  p size "%d+%d=%d" 1 2 (+ 1 2)))
+      (deref p 'string)))
+  =&gt; "1+2=3"
+</pre>
+<div class="node">
+<a name="Handling-Circular-References"></a>
+<p><hr>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#User_002dlevel-API">User-level API</a>
+
+</div>
+
+<h3 class="section">4.3 Handling Circular References</h3>
+
+<p>Vigil is able to automatically marshal circular structures that occur either
+in lisp or in foreign memory. However, due to the fact that the
+process of tracing circular
+references has a significant performance impact, it is disabled by default.
+
+   <p>You can control the mentioned process by the means of one of the
+following functions and macros:
+
+   <p><a name="index-enable_002dcircular_002dreferences-65"></a>
+
+<div class="defun">
+&mdash; Function: <b>enable-circular-references</b><var><a name="index-enable_002dcircular_002dreferences-66"></a></var><br>
+<blockquote><p>Enables the process of circular reference tracing
+in the current dynamic environment
+(either global or established by the means of <code>with-circular-references</code>
+or <code>without-curcular-references</code>)
+          <dl>
+<dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-disable_002dcircular_002dreferences-67"></a>
+
+<div class="defun">
+&mdash; Function: <b>disable-circular-references</b><var><a name="index-disable_002dcircular_002dreferences-68"></a></var><br>
+<blockquote><p>Disables the process of circular reference tracing
+in the current dynamic environment
+(either global or established by the means of <code>with-circular-references</code>
+or <code>without-curcular-references</code>)
+          <dl>
+<dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-clear_002dcircular_002dreference_002dcache-69"></a>
+
+<div class="defun">
+&mdash; Function: <b>clear-circular-reference-cache</b><var><a name="index-clear_002dcircular_002dreference_002dcache-70"></a></var><br>
+<blockquote><p>Clears the internal cache of circular references
+in the current dynamic environment
+(either global or established by the means of <code>with-circular-references</code>
+or <code>without-curcular-references</code>)
+          <dl>
+<dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002dcircular_002dreferences-71"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-circular-references</b><var> &amp;body body &rArr; values<a name="index-with_002dcircular_002dreferences-72"></a></var><br>
+<blockquote><p>Executes <var>body</var> forms in the dynamic environment where
+the process of circular reference tracing is enabled.
+          <dl>
+<dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-without_002dcircular_002dreferences-73"></a>
+
+<div class="defun">
+&mdash; Macro: <b>without-circular-references</b><var> &amp;body body &rArr; values<a name="index-without_002dcircular_002dreferences-74"></a></var><br>
+<blockquote><p>Executes <var>body</var> forms in the dynamic environment where
+the process of circular reference tracing is disabled.
+          <dl>
+<dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+<h3 class="heading">Example</h3>
+
+<pre class="lisp">  (define-struct node
+    (data int)
+    (next (&amp; node :in t)))
+  
+  ;;  Reference types(`&amp;') will be explained later
+  ;;  in this manual. Third parameter of this typespec
+  ;;  designates whether a reference is nullable or not.
+  
+  (with-circular-references
+    (let* ((circle (make-node)))
+      (setf (node-next circle) circle)
+      (with-pointer (p circle 'node)
+        (let ((node (deref p 'node)))
+          (eq node (node-next node))))))
+  =&gt; T
+</pre>
+<div class="node">
+<a name="Translators-and-Translatable-Types"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Built_002din-Types">Built-in Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#User_002dlevel-API">User-level API</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">5 Translators and Translatable Types</h2>
+
+<p>TODO
+
+<ul class="menu">
+<li><a accesskey="1" href="#Translators">Translators</a>
+<li><a accesskey="2" href="#Defining-and-Parsing-Type-Specifiers">Defining and Parsing Type Specifiers</a>
+<li><a accesskey="3" href="#Primitive-Types">Primitive Types</a>
+<li><a accesskey="4" href="#Immediate-Types">Immediate Types</a>
+<li><a accesskey="5" href="#Aggregate-Types">Aggregate Types</a>
+<li><a accesskey="6" href="#Proxy-Types">Proxy Types</a>
+</ul>
+
+<div class="node">
+<a name="Translators"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Defining-and-Parsing-Type-Specifiers">Defining and Parsing Type Specifiers</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>
+
+</div>
+
+<h3 class="section">5.1 Translators</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Defining-and-Parsing-Type-Specifiers"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Primitive-Types">Primitive Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Translators">Translators</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>
+
+</div>
+
+<h3 class="section">5.2 Defining and Parsing Type Specifiers</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Primitive-Types"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Immediate-Types">Immediate Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Defining-and-Parsing-Type-Specifiers">Defining and Parsing Type Specifiers</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>
+
+</div>
+
+<h3 class="section">5.3 Primitive Types</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Immediate-Types"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Aggregate-Types">Aggregate Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Primitive-Types">Primitive Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>
+
+</div>
+
+<h3 class="section">5.4 Immediate Types</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Aggregate-Types"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Proxy-Types">Proxy Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Immediate-Types">Immediate Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>
+
+</div>
+
+<h3 class="section">5.5 Aggregate Types</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Proxy-Types"></a>
+<p><hr>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Aggregate-Types">Aggregate Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>
+
+</div>
+
+<h3 class="section">5.6 Proxy Types</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Built-in-Types"></a>
+<a name="Built_002din-Types"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Functions">Functions</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Translators-and-Translatable-Types">Translators and Translatable Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">6 Built-in Types</h2>
+
+<p>TODO
+
+<ul class="menu">
+<li><a accesskey="1" href="#Built_002din-Primitives">Built-in Primitives</a>
+<li><a accesskey="2" href="#References">References</a>
+<li><a accesskey="3" href="#Arrays-and-Sequences">Arrays and Sequences</a>
+<li><a accesskey="4" href="#Enumerations">Enumerations</a>
+<li><a accesskey="5" href="#Structures-and-Unions">Structures and Unions</a>
+<li><a accesskey="6" href="#Strings">Strings</a>
+<li><a accesskey="7" href="#Strictly-Aligned-Types">Strictly Aligned Types</a>
+<li><a accesskey="8" href="#Filtered-Types">Filtered Types</a>
+<li><a accesskey="9" href="#Const-Types">Const Types</a>
+</ul>
+
+<div class="node">
+<a name="Built-in-Primitives"></a>
+<a name="Built_002din-Primitives"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#References">References</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Built_002din-Types">Built-in Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.1 Built-in Primitives</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="References"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Arrays-and-Sequences">Arrays and Sequences</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Built_002din-Primitives">Built-in Primitives</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.2 References</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Arrays-and-Sequences"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Enumerations">Enumerations</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#References">References</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.3 Arrays and Sequences</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Enumerations"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Structures-and-Unions">Structures and Unions</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Arrays-and-Sequences">Arrays and Sequences</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.4 Enumerations</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Structures-and-Unions"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Strings">Strings</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Enumerations">Enumerations</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.5 Structures and Unions</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Strings"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Strictly-Aligned-Types">Strictly Aligned Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Structures-and-Unions">Structures and Unions</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.6 Strings</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Strictly-Aligned-Types"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Filtered-Types">Filtered Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Strings">Strings</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.7 Strictly Aligned Types</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Filtered-Types"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Const-Types">Const Types</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Strictly-Aligned-Types">Strictly Aligned Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.8 Filtered Types</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Const-Types"></a>
+<p><hr>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Filtered-Types">Filtered Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Built_002din-Types">Built-in Types</a>
+
+</div>
+
+<h3 class="section">6.9 Const Types</h3>
+
+<p>TODO
+
+<div class="node">
+<a name="Functions"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Symbols-Re_002dExported-from-CFFI">Symbols Re-Exported from CFFI</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Built_002din-Types">Built-in Types</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">7 Functions</h2>
+
+<p>TODO
+
+<div class="node">
+<a name="Symbols-Re-Exported-from-CFFI"></a>
+<a name="Symbols-Re_002dExported-from-CFFI"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Glossary">Glossary</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Functions">Functions</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="chapter">8 Symbols Re-Exported from CFFI</h2>
+
+<p>TODO
+
+<div class="node">
+<a name="Glossary"></a>
+<p><hr>
+Next:&nbsp;<a rel="next" accesskey="n" href="#Comprehensive-Index">Comprehensive Index</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Symbols-Re_002dExported-from-CFFI">Symbols Re-Exported from CFFI</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="appendix">Appendix A Glossary</h2>
+
+<p>TODO
+
+<div class="node">
+<a name="Comprehensive-Index"></a>
+<p><hr>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="#Glossary">Glossary</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
+
+</div>
+
+<h2 class="unnumbered">Index</h2>
+
+<ul class="index-cp" compact>
+<li><a href="#index-g_t_0026-42"><code>&amp;</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-g_t_0026_0026-44"><code>&amp;&amp;</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-g_t_0026_002b-53"><code>&amp;+</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-g_t_0026_002d-56"><code>&amp;-</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-g_t_00260-52"><code>&amp;0</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-g_t_0026_003d-50"><code>&amp;=</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-g_t_0026_003f-48"><code>&amp;?</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-g_t_0026p-45"><code>&amp;p</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-alexandria-3">alexandria</a>: <a href="#Installation-and-Prerequisites">Installation and Prerequisites</a></li>
+<li><a href="#index-alignof-10"><code>alignof</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-alloc-18"><code>alloc</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-babel-2">babel</a>: <a href="#Installation-and-Prerequisites">Installation and Prerequisites</a></li>
+<li><a href="#index-CFFI-1">CFFI</a>: <a href="#Installation-and-Prerequisites">Installation and Prerequisites</a></li>
+<li><a href="#index-clean-20"><code>clean</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-clean_002dand_002dfree-26"><code>clean-and-free</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-cleaning-a-memory-22">cleaning a memory</a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-clear_002dcircular_002dreference_002dcache-70"><code>clear-circular-reference-cache</code></a>: <a href="#Handling-Circular-References">Handling Circular References</a></li>
+<li><a href="#index-convert-15"><code>convert</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-defalias-6"><code>defalias</code></a>: <a href="#User_002dlevel-API">User-level API</a></li>
+<li><a href="#index-deref-27"><code>deref</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-disable_002dcircular_002dreferences-67"><code>disable-circular-references</code></a>: <a href="#Handling-Circular-References">Handling Circular References</a></li>
+<li><a href="#index-enable_002dcircular_002dreferences-65"><code>enable-circular-references</code></a>: <a href="#Handling-Circular-References">Handling Circular References</a></li>
+<li><a href="#index-free-24"><code>free</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-offsetof-13"><code>offsetof</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-quicklisp-5">quicklisp</a>: <a href="#Installation-and-Prerequisites">Installation and Prerequisites</a></li>
+<li><a href="#index-raw_002dalloc-57"><code>raw-alloc</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-raw_002dfree-60"><code>raw-free</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-sizeof-9"><code>sizeof</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-translate-16"><code>translate</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-trivial_002dfeatures-4">trivial-features</a>: <a href="#Installation-and-Prerequisites">Installation and Prerequisites</a></li>
+<li><a href="#index-with_002dcircular_002dreferences-71"><code>with-circular-references</code></a>: <a href="#Handling-Circular-References">Handling Circular References</a></li>
+<li><a href="#index-with_002dpointer-33"><code>with-pointer</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-with_002dpointers-36"><code>with-pointers</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-with_002draw_002dpointer-61"><code>with-raw-pointer</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-with_002draw_002dpointers-63"><code>with-raw-pointers</code></a>: <a href="#Raw-Memory-Manipulation">Raw Memory Manipulation</a></li>
+<li><a href="#index-with_002dreference-29"><code>with-reference</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-with_002dreferences-31"><code>with-references</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-with_002dvalue-37"><code>with-value</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-with_002dvalues-39"><code>with-values</code></a>: <a href="#User_002dlevel-Translators">User-level Translators</a></li>
+<li><a href="#index-without_002dcircular_002dreferences-74"><code>without-circular-references</code></a>: <a href="#Handling-Circular-References">Handling Circular References</a></li>
+   </ul><div class="footnote">
+<hr>
+<a name="texinfo-footnotes-in-document"></a><h4>Footnotes</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> Mainly because of alignment conventions and because i am planning to add `by-value' passage of aggregate function parameters</p>
+
+   <hr></div>
+
+</body></html>
+
+<!--
+
+Local Variables:
+coding: utf-8
+End:
+
+-->

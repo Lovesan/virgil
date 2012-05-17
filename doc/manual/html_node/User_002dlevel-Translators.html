@@ -1,0 +1,420 @@
+<html lang="en">
+<head>
+<title>User-level Translators - Virgil User Manual</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="description" content="Virgil User Manual">
+<meta name="generator" content="makeinfo 4.13">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="User_002dlevel-API.html#User_002dlevel-API" title="User-level API">
+<link rel="prev" href="User_002dlevel-API.html#User_002dlevel-API" title="User-level API">
+<link rel="next" href="Raw-Memory-Manipulation.html#Raw-Memory-Manipulation" title="Raw Memory Manipulation">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<!--
+Copyright (C) 2010-2012, Dmitry Ignatiev <lovesan.ru at gmail.com>
+
+
+     Permission is hereby granted, free of charge, to any person
+     obtaining a copy of this software and associated documentation
+     files (the "Software"), to deal in the Software without
+     restriction, including without limitation the rights to use, copy,
+     modify, merge, publish, distribute, sublicense, and/or sell copies
+     of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be
+     included in all copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+     DEALINGS IN THE SOFTWARE.
+-->
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+body {font-family: century schoolbook, serif;
+      line-height: 1.3;
+      padding-left: 5em; padding-right: 1em;
+      padding-bottom: 1em; max-width: 60em;}
+table {border-collapse: collapse}
+span.roman { font-family: century schoolbook, serif; font-weight: normal; }
+h1, h2, h3, h4, h5, h6 {font-family:  Helvetica, sans-serif}
+h4 { margin-top: 2.5em; }
+dfn {font-family: inherit; font-variant: italic; font-weight: bolder }
+kbd {font-family: monospace; text-decoration: underline}
+/*var {font-family: Helvetica, sans-serif; font-variant: slanted}*/
+var {font-variant: slanted;}
+td  {padding-right: 1em; padding-left: 1em}
+sub {font-size: smaller}
+.node {padding: 0; margin: 0}
+
+.lisp { font-family: monospace;
+        background-color: #F4F4F4; border: 1px solid #AAA;
+        padding-top: 0.5em; padding-bottom: 0.5em; }
+
+/* coloring */
+
+.lisp-bg { background-color: #F4F4F4 ; color: black; }
+.lisp-bg:hover { background-color: #F4F4F4 ; color: black; }
+
+.symbol { font-weight: bold; color: #770055; background-color : transparent; border: 0px; margin: 0px;}
+a.symbol:link { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:active { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:visited { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+a.symbol:hover { font-weight: bold; color : #229955; background-color : transparent; text-decoration: none; border: 0px; margin: 0px; }
+.special { font-weight: bold; color: #FF5000; background-color: inherit; }
+.keyword { font-weight: bold; color: #770000; background-color: inherit; }
+.comment { font-weight: normal; color: #007777; background-color: inherit; }
+.string  { font-weight: bold; color: #777777; background-color: inherit; }
+.character   { font-weight: bold; color: #0055AA; background-color: inherit; }
+.syntaxerror { font-weight: bold; color: #FF0000; background-color: inherit; }
+span.paren1 { font-weight: bold; color: #777777; }
+span.paren1:hover { color: #777777; background-color: #BAFFFF; }
+span.paren2 { color: #777777; }
+span.paren2:hover { color: #777777; background-color: #FFCACA; }
+span.paren3 { color: #777777; }
+span.paren3:hover { color: #777777; background-color: #FFFFBA; }
+span.paren4 { color: #777777; }
+span.paren4:hover { color: #777777; background-color: #CACAFF; }
+span.paren5 { color: #777777; }
+span.paren5:hover { color: #777777; background-color: #CAFFCA; }
+span.paren6 { color: #777777; }
+span.paren6:hover { color: #777777; background-color: #FFBAFF; }
+--></style>
+</head>
+<body>
+<div class="node">
+<a name="User-level-Translators"></a>
+<a name="User_002dlevel-Translators"></a>
+<p>
+Next:&nbsp;<a rel="next" accesskey="n" href="Raw-Memory-Manipulation.html#Raw-Memory-Manipulation">Raw Memory Manipulation</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="User_002dlevel-API.html#User_002dlevel-API">User-level API</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="User_002dlevel-API.html#User_002dlevel-API">User-level API</a>
+<hr>
+</div>
+
+<h3 class="section">4.1 User-level Translators</h3>
+
+<p>These functions and macros are used with <code>type specifiers</code>. 
+Each of them parses a <code>typespec</code> into some internal representation and
+performs relevant operation.
+
+   <p>Note that all of the functions mentioned here heavily utilize
+<a href="http://l1sp.org/cl/define-compiler-macro">compiler macros</a>,
+so you should pass a constant <code>typespec</code> argument to them wherever possible.
+
+   <p><a name="index-sizeof-8"></a>
+
+<div class="defun">
+&mdash; Function: <b>sizeof</b><var> typespec &amp;optional value &rArr; count<a name="index-sizeof-9"></a></var><br>
+<blockquote><p>Returns number of bytes required to store value of type denoted by type specifier. 
+This function also accepts optional argument - a lisp value which is used when
+the <var>typespec</var> denotes a variable-sized foreign type.
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>value</var><dd>A lisp value. 
+<br><dt><var>count</var><dd>A number of bytes required to store value of type denoted by <code>typespec</code>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-alignof-10"></a>
+
+<div class="defun">
+&mdash; Function: <b>alignof</b><var> typespec &rArr; alignment<a name="index-alignof-11"></a></var><br>
+<blockquote><p>Computes alignment of type denoted by <var>typespec</var>.
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>alignment</var><dd>A positive integer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-offsetof-12"></a>
+
+<div class="defun">
+&mdash; Function: <b>offsetof</b><var> typespec member &rArr; offset<a name="index-offsetof-13"></a></var><br>
+<blockquote><p>Computes offset(in bytes) of the specified structure's slot.
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier denoting a structure type. 
+<br><dt><var>member</var><dd>A symbol, denoting a structure's slot. 
+<br><dt><var>offset</var><dd>A non-negative integer. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-convert-14"></a>
+
+<div class="defun">
+&mdash; Function: <b>convert</b><var> lisp-value typespec &rArr; foreign-value<a name="index-convert-15"></a></var><br>
+<blockquote><p>Converts a lisp value into foreign value.
+          <dl>
+<dt><var>lisp-value</var><dd>A lisp value. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>foreign-value</var><dd>A converted value. 
+<br><dt><var>typespec</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-translate-16"></a>
+
+<div class="defun">
+&mdash; Function: <b>translate</b><var> foreign-value typespec &rArr; lisp-value<a name="index-translate-17"></a></var><br>
+<blockquote><p>Translates a foreign value into lisp one.
+          <dl>
+<dt><var>foreign-value</var><dd>A foreign value. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>lisp-value</var><dd>A translated value. 
+</dl>
+        </p></blockquote></div>
+
+   <blockquote>
+<strong>Implementor's note:</strong> <code>convert</code><em> and </em><code>translate</code><em> only operate on immediate and primitive types</em>
+</blockquote>
+
+   <p><a name="index-alloc-18"></a>
+
+<div class="defun">
+&mdash; Function: <b>alloc</b><var> typespec &amp;optional value &rArr; pointer<a name="index-alloc-19"></a></var><br>
+<blockquote><p>Allocates enough memory to hold the value of type denoted by <var>typespec</var>. 
+This function accepts an optional parameter - a value, which is written
+to allocated memory. Unless this optional parameter is supplied,
+this function writes a type's <code>prototype</code> into allocated memory. 
+(<code>prototype</code> concept is explained later in this manual).
+          <dl>
+<dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>value</var><dd>A lisp value, which is written to freshly allocated memory. 
+<br><dt><var>pointer</var><dd>A pointer to foreign memory. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-clean-20"></a>
+
+<div class="defun">
+&mdash; Function: <b>clean</b><var> pointer lisp-value typespec<a name="index-clean-21"></a></var><br>
+<blockquote><p><a name="index-cleaning-a-memory-22"></a><code>Cleans</code> foreign memory, pointed by <var>pointer</var>, but does not
+deallocate it. The concept of <code>cleaning</code> a memory is roughly equivalent
+to the concept of C++ <code>destructors</code> - one of the tasks this function
+may perform is deallocatation of pointer slots in structures and arrays,
+for example.
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>lisp-value</var><dd>A value which was written to that memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-free-23"></a>
+
+<div class="defun">
+&mdash; Function: <b>free</b><var> pointer &amp;optional typespec<a name="index-free-24"></a></var><br>
+<blockquote><p>Deallocates a block of foreign memory, allocated for the type denoted by
+<code>typespec</code>. Unless <var>typespec</var> is supplied, standard deallocator is used. 
+This function does not <code>clean</code> a memory. For such a task, use <code>clean</code> or
+<code>clean-and-free</code> functions.
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        See also: <a href="Raw-Memory-Manipulation.html#Raw-Memory-Manipulation">Raw Memory Manipulation</a>
+</p></blockquote></div>
+
+   <p><a name="index-clean_002dand_002dfree-25"></a>
+
+<div class="defun">
+&mdash; Function: <b>clean-and-free</b><var> pointer value typespec<a name="index-clean_002dand_002dfree-26"></a></var><br>
+<blockquote><p>Cleans a block of foreign memory and deallocates it afterwards.
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>value</var><dd>A lisp value which was previously written to that memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>This function does not return any useful values.</var><dd></dl>
+        </p></blockquote></div>
+
+   <p><a name="index-deref-27"></a>
+
+<div class="defun">
+&mdash; Accessor: <b>deref</b><var> pointer typespec &amp;optional offset output &rArr; lisp-value<a name="index-deref-28"></a></var><br>
+<blockquote><p><code>deref</code> function dereferences a memory pointed by <var>pointer</var> and reads a lisp value
+of type denoted by <var>typespec</var>. When <var>output</var> parameter
+is present, and not equals to <code>NIL</code>, the result of the marshaling
+operation is stored into value denoted by this parameter, and this value
+becomes function's return value. In this case, <var>typespec</var> must denote some aggregate type.
+
+        <p><code>(setf deref)</code> function performs an inverse operation:
+it dereferences a foreign memory pointed by <var>pointer</var> and
+writes a <code>lisp-value</code> into it, accordingly to marshaling rules denoted by <var>typespec</var>. 
+<blockquote>
+<strong>Implementor's note:</strong> <code>(setf deref)</code><em> does not have </em><var>output</var><em> parameter, for obvious reasons.</em>
+</blockquote>
+
+          <dl>
+<dt><var>pointer</var><dd>A pointer to foreign memory. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. 
+<br><dt><var>offset</var><dd>An integer, defaults to 0. 
+<br><dt><var>output</var><dd>A lisp value, defaults to NIL. 
+<br><dt><var>lisp-value</var><dd>A lisp value of type denoted by <code>typespec</code>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002dreference-29"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-reference</b> (<var>var-or-vars value-var typespec &amp;optional mode nullable</var>)<var> &amp;body body &rArr; values<a name="index-with_002dreference-30"></a></var><br>
+<blockquote><p>Executes <var>body</var> forms in dynamic environment where <var>var</var> is bound to the pointer to memory
+allocated for the value of type denoted by <code>typespec</code>.
+
+        <p>This macro roughly emulates behavior of C++ references. Have a look at examples below.
+
+        <p>Note that <var>var</var> pointer is invalid outside the macro scope, because
+the memory allocated to this pointer is freed after the dynamic environment exits. 
+Moreover, this macro performs <code>clean</code> operation before exiting dynamic environment,
+so, for example, internal pointers in structures also become invalid outside the scope.
+          <dl>
+<dt><var>var-or-vars</var><dd>::= <var>var</var> | (<var>var</var> <var>size-var</var>)
+<br><dt><var>var</var><dd>A symbol naming a variable which is bound to the pointer
+to memory allocated for value denoted by <var>value-var</var>. Not evaluated. 
+<br><dt><var>size-var</var><dd>A symbol naming a variable which is bound to an integer
+that represents the size(in bytes) of the memory pointed by <var>var</var> pointer. Not evaluated. 
+<br><dt><var>value-var</var><dd>A symbol naming a variable which holds a value of type
+denoted by <var>typespec</var>. Not evaluated. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. Evaluated. 
+<br><dt><var>mode</var><dd>A symbol, one of <code>:in</code>, <code>:out</code>, <code>:inout</code>. 
+Defaults to <code>:in</code>. Not evaluated. 
+This parameter represents a type of marshaling to be performed -
+<code>copy-in</code>, <code>copy-out</code>, or <code>copy-in-copy-out</code> respectively. 
+<blockquote>
+<strong>Implementor's note:</strong> <em>on some lisp systems, with certain types of arrays copying is avoided. 
+On such systems </em><code>:virgil.shareable-arrays</code><em>
+will be present in </em><var>*features*</var>
+</blockquote>
+
+          <br><dt><var>nullable</var><dd>Unless this parameter equals to <code>NIL</code>, value represented by
+<var>value-var</var> can be a special constant <code>VOID</code>, which denotes a NULL reference. 
+In this case, <var>var</var> is bound to NULL pointer, and <var>size-var</var> is bound to 0. 
+This parameter is not evaluated. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        <blockquote>
+<strong>Implementor's note:</strong> <em>If </em><var>typespec</var><em> denotes a foreign type of fixed size(that is, all values of this
+type occupy the same number of bytes in memory), memory may be allocated on stack.</em>
+</blockquote>
+
+        </blockquote></div>
+
+   <p><a name="index-with_002dreferences-31"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-references</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002dreferences-32"></a></var><br>
+<blockquote><dl>
+<dt><var>specs</var><dd>A list of parameter specifications. Each one corresponds to single
+<code>with-reference</code> parameter form. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002dpointer-33"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-pointer</b> (<var>var-or-vars value typespec &amp;optional mode nullable</var>)<var> &amp;body body &rArr; values<a name="index-with_002dpointer-34"></a></var><br>
+<blockquote><p>Equivalent to <code>with-reference</code> but <var>value</var> parameter denotes
+a value itself, not a variable name, and is evaluated. 
+</p></blockquote></div>
+
+   <p><a name="index-with_002dpointers-35"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-pointers</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002dpointers-36"></a></var><br>
+<blockquote><p>Equivalent to <code>with-references</code> but each <var>value</var> parameter denotes
+a value itself, not a variable name, and is evaluated. 
+</p></blockquote></div>
+
+   <p><a name="index-with_002dvalue-37"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-value</b> (<var>var pointer typespec &amp;optional mode nullable</var>)<var> &amp;body body &rArr; values<a name="index-with_002dvalue-38"></a></var><br>
+<blockquote><p>An opposite operation, compared to <code>with-reference</code>. 
+Executes <var>body</var> forms in dynamic environment where <var>var</var> is bound to value
+that corresponds to lisp representation of memory pointed by <var>pointer</var>.
+          <dl>
+<dt><var>var</var><dd>A symbol, naming a variable which is bound to lisp value. Not evaluated. 
+<br><dt><var>pointer</var><dd>A foreign pointer. Evaluated. 
+<br><dt><var>typespec</var><dd>A Virgil's type specifier. Evaluated. 
+<br><dt><var>mode</var><dd>A symbol, one of <code>:in</code>, <code>:out</code>, <code>:inout</code>. Not evaluated. 
+Defaults to <code>:in</code>. 
+<code>:in</code> correspond to <code>copy-in</code> operation - a data is
+readen from <var>pointer</var>(as with <code>deref</code>) and is bound to <var>var</var>. 
+<code>:out</code> correspond to <code>copy-out</code> operaton - a lisp value
+which is bound to <var>var</var> during the execution of <var>body</var> forms
+is written into foreign memory pointed by <var>pointer</var>. 
+<code>:inout</code> correspond to combination of this operations. 
+<br><dt><var>nullable</var><dd>Unless this parameter equals to NIL, <var>pointer</var> may be equal to NULL pointer,
+and <var>var</var> may be bound to special constant <code>VOID</code>, which represents NULL reference. 
+Wherever one of these conditions occurs, no marshaling is performed. 
+This parameter is not evaluated. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+   <p><a name="index-with_002dvalues-39"></a>
+
+<div class="defun">
+&mdash; Macro: <b>with-values</b> (<var>&amp;rest specs</var>)<var> &amp;body body &rArr; values<a name="index-with_002dvalues-40"></a></var><br>
+<blockquote><dl>
+<dt><var>specs</var><dd>A list of parameter specifications. Each one corresponds to single
+<code>with-value</code> parameter form. 
+<br><dt><var>body</var><dd>A list of forms to be executed. 
+<br><dt><var>values</var><dd>Values returned by last form in <var>body</var>. 
+</dl>
+        </p></blockquote></div>
+
+<h3 class="heading">Examples</h3>
+
+<pre class="lisp">  (sizeof 'uint32)
+  =&gt; 4
+  
+  (alignof 'byte)
+  =&gt; 1
+  
+  (offsetof '(struct ()
+               (x float)
+               (y float)
+               (z float))
+            'z)
+  =&gt; 8
+  
+  (convert #\A 'char)
+  =&gt; 65
+  
+  (translate 1 'boolean)
+  =&gt; T
+  
+  (let* ((list '("Hello, " "world!"))
+         (pointer (alloc '(sequence (&amp; string)) list)))
+    (unwind-protect
+        (concatenate 'string
+                     (deref pointer '(&amp; string))
+                     (deref pointer '(&amp; string) (sizeof 'pointer)))
+      (clean-and-free pointer list '(sequence (&amp; string)))))
+  =&gt; "Hello, world!"
+  
+  (let ((x 1))
+    (with-reference (p x 'int :inout)
+      (with-value (val p 'int :inout)
+        (incf val)))
+    x)
+  =&gt; 2
+</pre>
+   </body></html>
+

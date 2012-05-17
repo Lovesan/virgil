@@ -60,7 +60,7 @@
 @syncodeindex fn cp
 
 @copying
-Copyright @copyright{} 2010-2011, Dmitry Ignatiev <lovesan.ru at gmail.com> @*
+Copyright @copyright{} 2010-2012, Dmitry Ignatiev <lovesan.ru at gmail.com> @*
 
 @quotation
 Permission is hereby granted, free of charge, to any person
