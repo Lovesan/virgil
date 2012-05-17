@@ -1,0 +1,947 @@
+\input texinfo @c -*- Mode: Texinfo; Mode: auto-fill -*-
+@c %**start of header
+@setfilename virgil.info
+@documentencoding UTF-8
+@settitle Virgil User Manual
+@exampleindent 2
+
+@c Few helpful macros
+
+@macro impnote {text}
+@quotation
+@strong{Implementor's note:} @emph{\text\}
+@end quotation
+@end macro
+
+@ifhtml
+@macro result
+=>
+@end macro
+@end ifhtml
+
+@c Similar macro to @result. Its purpose is to work around the fact
+@c that &rArr; does not work properly inside @lisp.
+@ifhtml
+@macro res
+@html
+&rArr;
+@end html
+@end macro
+@end ifhtml
+
+@ifnothtml
+@alias res = result
+@end ifnothtml
+
+@c Info "requires" that x-refs end in a period or comma, or ) in the
+@c case of @pxref.  So the following implements that requirement for
+@c the "See also" subheadings that permeate this manual, but only in
+@c Info mode.
+@ifinfo
+@macro seealso {name}
+@ref{\name\}.
+@end macro
+@end ifinfo
+
+@ifnotinfo
+@alias seealso = ref
+@end ifnotinfo
+
+@c Typeset comments in roman font for the TeX output.
+@iftex
+@alias lispcmt = r
+@end iftex
+@ifnottex
+@alias lispcmt = asis
+@end ifnottex
+
+@c Show types in the same index as functions.
+@syncodeindex tp cp
+@syncodeindex fn cp
+
+@copying
+Copyright @copyright{} 2010-2011, Dmitry Ignatiev <lovesan.ru at gmail.com> @*
+
+@quotation
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+@sc{The software is provided ``as is'', without warranty of any kind,
+express or implied, including but not limited to the warranties of
+merchantability, fitness for a particular purpose and noninfringement.
+In no event shall the authors or copyright holders be liable for any
+claim, damages or other liability, whether in an action of contract,
+tort or otherwise, arising from, out of or in connection with the
+software or the use or other dealings in the software.}
+@end quotation
+@end copying
+@c %**end of header
+
+@titlepage
+@title Virgil User Manual
+@c @subtitle Version X.X
+@c @author Dmitry Ignatiev
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top, Introduction, (dir), (dir)
+@top Virgil
+@insertcopying
+@end ifnottex
+
+@menu
+* Introduction::
+* Installation and Prerequisites::
+* Tutorial::
+* User-level API::
+* Translators and Translatable Types::
+* Built-in Types::
+* Functions::
+* Symbols Re-Exported from CFFI::
+* Glossary::
+* Comprehensive Index::
+@end menu
+
+@page
+@node Introduction
+@chapter Introduction
+
+Virgil is an extensible and high-level foreign function interface(FFI)
+built on top of @acronym{CFFI} and oriented towards marshaling lisp data
+into raw unmanaged memory and back.
+
+Why the name `Virgil'? Well, have you read Dante's `Divine Comedy'? :)
+
+@heading Rationale
+
+Why another FFI? @acronym{CFFI} seems perfect in terms of portability,
+but it exposes quite a low-level interface. @acronym{CFFI} is oriented towards
+manipulating foreign memory, and forces us to write `C-style' code in Lisp.
+Remember the old joke - "You can write FORTRAN in any language"?
+Using modern FFIs you can also write `C' in any language - but should you?
+
+Virgil, as opposed to @acronym{CFFI}, is oriented towards marshaling.
+This means, Virgil does its best to free the programmer from
+messing up with pointers and the like, and allows to communicate
+with `native' code using Lisp data structures.
+
+Thus, the main difference between @acronym{CFFI} and Virgil is that Virgil provides
+convenient semantics for marshaling aggregate data types and strives to 
+establish a one-to-one mapping between lisp types and foreign ones.
+
+Nevertheless, Virgil's interface is actually a bit similiar
+to that of @acronym{CFFI}, so you can easily start using it if you are familiar
+with the latter.
+
+@impnote{Virgil is not a kind of a replacement for @acronym{CFFI}, but instead a kind of a DSL on
+top of it.}
+
+@page
+@node Installation and Prerequisites
+@chapter Installation and Prerequisites
+
+Sources are available on github:
+@itemize
+@item
+@url{https://github.com/Lovesan/virgil}
+@end itemize
+
+You can obtain them either using git, or by downloading latest zipball:
+@itemize
+@item
+@url{https://github.com/Lovesan/virgil/downloads}
+@end itemize
+
+Virgil depends on @code{@acronym{CFFI}}, @code{alexandria}, @code{babel} and @code{trivial-features}.
+Note that @acronym{CFFI} itself depends on the other three libraries.
+
+You can obtain all of them from their home pages:
+@itemize
+@item
+@cindex CFFI
+@url{http://common-lisp.net/project/cffi/}
+@item
+@cindex babel
+@url{http://common-lisp.net/project/babel/}
+@item
+@cindex alexandria
+@url{http://common-lisp.net/project/alexandria/}
+@item
+@cindex trivial-features
+@url{http://www.cliki.net/trivial-features}
+@end itemize
+but i recommend to use Zach Bean's
+@cindex quicklisp
+@url{http://www.quicklisp.org/, quicklisp} - @code{(ql:quickload :cffi)}
+
+Note that at the moment Virgil only supports x86 and x86-64 platforms.
+@footnote{Mainly because of alignment conventions and because i am planning to add `by-value' passage of aggregate function parameters}
+
+@page
+@node Tutorial
+@chapter Tutorial
+
+TODO
+
+@page
+@node User-level API
+@chapter User-level API
+
+At the user level, marshaling engine utilizes
+a concept of @code{type specifier}, or @code{typespec} for short.
+A @code{typespec} is an s-expression denoting some marshling rules to
+be applied to some `foreign' value, such as a pointer, to translate it into lisp,
+or to some lisp value to convert it to foreign one.
+
+Virgil's @code{type specifiers} are somewhat similiar to Common Lisp
+@code{type specifiers}, in the sense that they are represented
+either by a symbol denoting a type name or by a list,
+whose first elment is such a symbol.
+
+Virgil exposes a @url{http://l1sp.org/cl/deftype, deftype}-like macro
+for establishing aliases for @code{typespecs}:
+
+@findex defalias
+@defmac defalias name lambda-list &body body @res{} name
+@table @var
+@item name
+A symbol.
+@item lambda-list
+A function lambda-list.
+@item body
+List of forms to be executed, preceded by an optional list of declarations.
+@end table
+@end defmac
+@subheading Example
+@lisp
+(defalias float4 (&optional (float-type 'single-float))
+  `(simple-array ,float-type (4)))
+@end lisp
+
+@impnote{You must not define recursive types with @code{defalias}. Recursive
+types are supported only in structures. @code{defalias}, not unlike @code{deftype}, is
+unable to handle them - lisp system will crash or hang.}
+
+@menu
+* User-level Translators::
+* Raw Memory Manipulation::
+* Handling Circular References::
+@end menu
+
+@page
+@node User-level Translators, Raw Memory Manipulation, User-level API, User-level API
+@section User-level Translators
+
+These functions and macros are used with @code{type specifiers}. 
+Each of them parses a @code{typespec} into some internal representation and
+performs relevant operation.
+
+Note that all of the functions mentioned here heavily utilize 
+@url{http://l1sp.org/cl/define-compiler-macro, compiler macros},
+so you should pass a constant @code{typespec} argument to them wherever possible.
+
+@findex sizeof
+@defun sizeof typespec &optional value @res{} count
+Returns number of bytes required to store value of type denoted by type specifier. 
+This function also accepts optional argument - a lisp value which is used when
+the @var{typespec} denotes a variable-sized foreign type.
+@table @var
+@item typespec
+A Virgil's type specifier.
+@item value
+A lisp value.
+@item count
+A number of bytes required to store value of type denoted by @code{typespec}.
+@end table
+@end defun
+
+@findex alignof
+@defun alignof typespec @res{} alignment
+Computes alignment of type denoted by @var{typespec}.
+@table @var
+@item typespec
+A Virgil's type specifier.
+@item alignment
+A positive integer.
+@end table
+@end defun
+
+@findex offsetof
+@defun offsetof typespec member @res{} offset
+Computes offset(in bytes) of the specified structure's slot.
+@table @var
+@item typespec
+A Virgil's type specifier denoting a structure type.
+@item member
+A symbol, denoting a structure's slot.
+@item offset
+A non-negative integer.
+@end table
+@end defun
+
+@findex convert
+@defun convert lisp-value typespec @res{} foreign-value
+Converts a lisp value into foreign value.
+@table @var
+@item lisp-value
+A lisp value.
+@item typespec
+A Virgil's type specifier.
+@item foreign-value
+A converted value.
+@item typespec
+@end table
+@end defun
+
+@findex translate
+@defun translate foreign-value typespec @res{} lisp-value
+Translates a foreign value into lisp one.
+@table @var
+@item foreign-value
+A foreign value.
+@item typespec
+A Virgil's type specifier.
+@item lisp-value
+A translated value.
+@end table
+@end defun
+
+@impnote{@code{convert} and @code{translate} only operate on immediate and primitive types}
+
+@findex alloc
+@defun alloc typespec &optional value @res{} pointer
+Allocates enough memory to hold the value of type denoted by @var{typespec}.
+This function accepts an optional parameter - a value, which is written
+to allocated memory. Unless this optional parameter is supplied,
+this function writes a type's @code{prototype} into allocated memory.
+(@code{prototype} concept is explained later in this manual).
+@table @var
+@item typespec
+A Virgil's type specifier.
+@item value
+A lisp value, which is written to freshly allocated memory.
+@item pointer
+A pointer to foreign memory.
+@end table
+@end defun
+
+@findex clean
+@defun clean pointer lisp-value typespec
+@cindex cleaning a memory
+@code{Cleans} foreign memory, pointed by @var{pointer}, but does not
+deallocate it. The concept of @code{cleaning} a memory is roughly equivalent
+to the concept of C++ @code{destructors} - one of the tasks this function
+may perform is deallocatation of pointer slots in structures and arrays,
+for example.
+@table @var
+@item pointer
+A pointer to foreign memory.
+@item lisp-value
+A value which was written to that memory.
+@item typespec
+A Virgil's type specifier.
+@item This function does not return any useful values.
+@end table
+@end defun
+
+@findex free
+@defun free pointer &optional typespec
+Deallocates a block of foreign memory, allocated for the type denoted by
+@code{typespec}. Unless @var{typespec} is supplied, standard deallocator is used.
+This function does not @code{clean} a memory. For such a task, use @code{clean} or
+@code{clean-and-free} functions.
+@table @var
+@item pointer
+A pointer to foreign memory.
+@item typespec
+A Virgil's type specifier
+@item This function does not return any useful values.
+@end table
+See also: @seealso{Raw Memory Manipulation}
+@end defun
+
+@findex clean-and-free
+@defun clean-and-free pointer value typespec
+Cleans a block of foreign memory and deallocates it afterwards.
+@table @var
+@item pointer
+A pointer to foreign memory.
+@item value
+A lisp value which was previously written to that memory.
+@item typespec
+A Virgil's type specifier.
+@item This function does not return any useful values.
+@end table
+@end defun
+
+@findex deref
+@deffn {Accessor} deref pointer typespec &optional offset output @res{} lisp-value
+@code{deref} function dereferences a memory pointed by @var{pointer} and reads a lisp value
+of type denoted by @var{typespec}. When @var{output} parameter
+is present, and not equals to @code{NIL}, the result of the marshaling
+operation is stored into value denoted by this parameter, and this value
+becomes function's return value. In this case, @var{typespec} must denote some aggregate type.
+
+@code{(setf deref)} function performs an inverse operation:
+it dereferences a foreign memory pointed by @var{pointer} and
+writes a @code{lisp-value} into it, accordingly to marshaling rules denoted by @var{typespec}.
+@impnote{@code{(setf deref)} does not have @var{output} parameter, for obvious reasons.}
+@table @var
+@item pointer
+A pointer to foreign memory.
+@item typespec
+A Virgil's type specifier.
+@item offset
+An integer, defaults to 0.
+@item output
+A lisp value, defaults to NIL.
+@item lisp-value
+A lisp value of type denoted by @code{typespec}.
+@end table
+@end deffn
+
+@findex with-reference
+@defmac with-reference (var-or-vars value-var typespec &optional mode nullable) &body body @res{} values
+Executes @var{body} forms in dynamic environment where @var{var} is bound to the pointer to memory
+allocated for the value of type denoted by @code{typespec}.
+
+This macro roughly emulates behavior of C++ references. Have a look at examples below.
+
+Note that @var{var} pointer is invalid outside the macro scope, because
+the memory allocated to this pointer is freed after the dynamic environment exits.
+Moreover, this macro performs @code{clean} operation before exiting dynamic environment,
+so, for example, internal pointers in structures also become invalid outside the scope.
+@table @var
+@item var-or-vars
+::= @var{var} | (@var{var} @var{size-var})
+@item var
+A symbol naming a variable which is bound to the pointer
+to memory allocated for value denoted by @var{value-var}. Not evaluated.
+@item size-var
+A symbol naming a variable which is bound to an integer
+that represents the size(in bytes) of the memory pointed by @var{var} pointer. Not evaluated.
+@item value-var
+A symbol naming a variable which holds a value of type
+denoted by @var{typespec}. Not evaluated.
+@item typespec
+A Virgil's type specifier. Evaluated.
+@item mode
+A symbol, one of @code{:in}, @code{:out}, @code{:inout}.
+Defaults to @code{:in}. Not evaluated.
+This parameter represents a type of marshaling to be performed - 
+@code{copy-in}, @code{copy-out}, or @code{copy-in-copy-out} respectively.
+@impnote{on some lisp systems, with certain types of arrays copying is avoided.
+On such systems @code{:virgil.shareable-arrays}
+will be present in @var{*features*}}
+@item nullable
+Unless this parameter equals to @code{NIL}, value represented by
+@var{value-var} can be a special constant @code{VOID}, which denotes a NULL reference.
+In this case, @var{var} is bound to NULL pointer, and @var{size-var} is bound to 0.
+This parameter is not evaluated.
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@impnote{If @var{typespec} denotes a foreign type of fixed size(that is, all values of this
+type occupy the same number of bytes in memory), memory may be allocated on stack.}
+@end defmac
+
+@findex with-references
+@defmac with-references (&rest specs) &body body @res{} values
+@table @var
+@item specs
+A list of parameter specifications. Each one corresponds to single 
+@code{with-reference} parameter form.
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@end defmac
+
+@findex with-pointer
+@defmac with-pointer (var-or-vars value typespec &optional mode nullable) &body body @res{} values
+Equivalent to @code{with-reference} but @var{value} parameter denotes
+a value itself, not a variable name, and is evaluated.
+@end defmac
+
+@findex with-pointers
+@defmac with-pointers (&rest specs) &body body @res{} values
+Equivalent to @code{with-references} but each @var{value} parameter denotes 
+a value itself, not a variable name, and is evaluated.
+@end defmac
+
+@findex with-value
+@defmac with-value (var pointer typespec &optional mode nullable) &body body @res{} values
+An opposite operation, compared to @code{with-reference}.
+Executes @var{body} forms in dynamic environment where @var{var} is bound to value
+that corresponds to lisp representation of memory pointed by @var{pointer}.
+@table @var
+@item var
+A symbol, naming a variable which is bound to lisp value. Not evaluated.
+@item pointer
+A foreign pointer. Evaluated.
+@item typespec
+A Virgil's type specifier. Evaluated.
+@item mode
+A symbol, one of @code{:in}, @code{:out}, @code{:inout}. Not evaluated.
+Defaults to @code{:in}.
+@code{:in} correspond to @code{copy-in} operation - a data is
+readen from @var{pointer}(as with @code{deref}) and is bound to @var{var}.
+@code{:out} correspond to @code{copy-out} operaton - a lisp value
+which is bound to @var{var} during the execution of @var{body} forms
+is written into foreign memory pointed by @var{pointer}.
+@code{:inout} correspond to combination of this operations.
+@item nullable
+Unless this parameter equals to NIL, @var{pointer} may be equal to NULL pointer,
+and @var{var} may be bound to special constant @code{VOID}, which represents NULL reference.
+Wherever one of these conditions occurs, no marshaling is performed.
+This parameter is not evaluated.
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@end defmac
+
+@findex with-values
+@defmac with-values (&rest specs) &body body @res{} values
+@table @var
+@item specs
+A list of parameter specifications. Each one corresponds to single 
+@code{with-value} parameter form.
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@end defmac
+
+@heading Examples
+@lisp
+(sizeof 'uint32)
+@result{} 4
+
+(alignof 'byte)
+@result{} 1
+
+(offsetof '(struct ()
+             (x float)
+             (y float)
+             (z float))
+          'z)
+@result{} 8
+
+(convert #\A 'char)
+@result{} 65
+
+(translate 1 'boolean)
+@result{} T
+
+(let* ((list '("Hello, " "world!"))
+       (pointer (alloc '(sequence (& string)) list)))
+  (unwind-protect
+      (concatenate 'string
+                   (deref pointer '(& string))
+                   (deref pointer '(& string) (sizeof 'pointer)))
+    (clean-and-free pointer list '(sequence (& string)))))
+@result{} "Hello, world!"
+
+(let ((x 1))
+  (with-reference (p x 'int :inout)
+    (with-value (val p 'int :inout)
+      (incf val)))
+  x)
+@result{} 2
+@end lisp
+
+@page
+@node Raw Memory Manipulation
+@section Raw Memory Manipulation
+
+Sometimes it is neccessary to directly manipulate foreign memory.
+This section describes functions and macros that are used to
+allocate and free uninitialized memory, as well as ones that are
+used in pointer arithmetic.
+
+@findex &
+@defun & address @res{} pointer
+Constructs a foreign pointer from @var{address}.
+@table @var
+@item address
+A non-negative integer.
+@item pointer
+A foreign pointer.
+@end table
+@end defun
+
+@findex &&
+@defun && pointer @res{} address
+Returns an integer representation of a @var{pointer}.
+@table @var
+@item pointer
+A foreign pointer.
+@item address
+A non-negative integer.
+@end table
+@end defun
+
+@findex &p
+@defun &p object @res{} T or NIL
+A predicate for a pointer.
+Returns @code{T} if an @var{object} is a foreign pointer
+and @code{NIL} otherwise.
+@end defun
+
+@findex &?
+@defun &? pointer @res{} T or NIL
+A predicate for a non-NULL pointer.
+Returns @code{NIL} if a @var{pointer} is a NULL pointer
+and @code{T} otherwise.
+@end defun
+
+@findex &=
+@defun &= pointer1 pointer2 @res{} T or NIL
+Pointer comparator.
+Returns @code{T} if @var{pointer1} points to the same
+location in memory as @var{pointer2} and @code{NIL} otherwise.
+@end defun
+
+@findex &0
+@defun &0 @res{} a NULL pointer
+Returns a NULL pointer.
+The symbol @code{&0} also denotes a corresponding
+@url{http://l1sp.org/cl/define-symbol-macro, symbol macro}.
+@end defun
+
+@findex &+
+@defun &+ pointer offset &optional typespec @res{} new-pointer
+Increments a @var{pointer} by an @var{offset}.
+If @var{typespec} parameter is supplied, offset is measured in
+sizes of type denoted by it, otherwise offset is measured in bytes.
+@end defun
+
+@findex &-
+@defun &- pointer offset &optional typespec @res{} new-pointer
+Decrements a @var{pointer} by an @var{offset}.
+If @var{typespec} parameter is supplied, offset is measured in
+sizes of type denoted by it, otherwise offset is measured in bytes.
+@end defun
+
+@findex raw-alloc
+@defun raw-alloc size @res{} pointer
+Allocates @var{size} bytes of foreign memory.
+@table @var
+@item size
+A non-negative integer,
+@item pointer
+A foreign pointer.
+@end table
+@end defun
+
+@findex raw-free
+@defun raw-free pointer
+Deallocates a block of foreign memory
+that was previously allocated by @code{raw-alloc}.
+@table @var
+@item pointer
+A foreign pointer
+@item This function does not return any useful values.
+@end table
+@end defun
+
+@findex with-raw-pointer
+@defmac with-raw-pointer (var size &optional size-var) &body body @res{} values
+Executes @var{body} forms in dynamic environment where @var{var} 
+is bound to a pointer to a block of foreign memory of @var{size} bytes.
+
+Note that @var{var} pointer is invalid outside the macro scope, because
+the memory allocated to this pointer is freed after the dynamic environment exits.
+@table @var
+@item var
+A symbol denoting a variable name that is bound to a pointer. Not evaluated.
+@item size
+A non-negative integer. Evaluated.
+@item size-var
+An optional parameter that denotes a variable name that is bound
+to the result of evaluation of @var{size} parameter. Not evaluated.
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@impnote{If @var{size} parameter is a constant expression, memory may be
+allocated on stack.}
+@end defmac
+
+@findex with-raw-pointers
+@defmac with-raw-pointers (&rest specs) &body body @res{} values
+@table @var
+@item specs
+A list of parameter specifications. Each one corresponds to single 
+@code{with-raw-pointer} parameter form.
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@end defmac
+
+@heading Examples
+@lisp
+(&& &0)
+@result{} 0
+
+(&= &0 (&- (& 1) 1))
+@result{} T
+
+(with-raw-pointer (p 100 size)
+  (when (/= 0 (external-function-call
+                #+windows "_snprintf"
+                #-windows "snprintf"
+                ((:cdecl) (int)
+                 (pointer buffer)
+                 (size-t size)
+                 ((& string) format)
+                 (int x)
+                 (int y)
+                 (int z))
+                p size "%d+%d=%d" 1 2 (+ 1 2)))
+    (deref p 'string)))
+@result{} "1+2=3"
+@end lisp
+
+@node Handling Circular References
+@section Handling Circular References
+
+Vigil is able to automatically marshal circular structures that occur either
+in lisp or in foreign memory. However, due to the fact that the
+process of tracing circular
+references has a significant performance impact, it is disabled by default.
+
+You can control the mentioned process by the means of one of the
+following functions and macros:
+
+@findex enable-circular-references
+@defun enable-circular-references
+Enables the process of circular reference tracing
+in the current dynamic environment
+(either global or established by the means of @code{with-circular-references}
+or @code{without-curcular-references})
+@table @var
+@item This function does not return any useful values.
+@end table
+@end defun
+
+@findex disable-circular-references
+@defun disable-circular-references
+Disables the process of circular reference tracing
+in the current dynamic environment
+(either global or established by the means of @code{with-circular-references}
+or @code{without-curcular-references})
+@table @var
+@item This function does not return any useful values.
+@end table
+@end defun
+
+@findex clear-circular-reference-cache
+@defun clear-circular-reference-cache
+Clears the internal cache of circular references
+in the current dynamic environment
+(either global or established by the means of @code{with-circular-references}
+or @code{without-curcular-references})
+@table @var
+@item This function does not return any useful values.
+@end table
+@end defun
+
+@findex with-circular-references
+@defmac with-circular-references &body body @res{} values
+Executes @var{body} forms in the dynamic environment where
+the process of circular reference tracing is enabled.
+@table @var
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@end defmac
+
+@findex without-circular-references
+@defmac without-circular-references &body body @res{} values
+Executes @var{body} forms in the dynamic environment where
+the process of circular reference tracing is disabled.
+@table @var
+@item body
+A list of forms to be executed.
+@item values
+Values returned by last form in @var{body}.
+@end table
+@end defmac
+
+@heading Example
+@lisp
+(define-struct node
+  (data int)
+  (next (& node :in t)))
+
+;;  Reference types(`&') will be explained later
+;;  in this manual. Third parameter of this typespec
+;;  designates whether a reference is nullable or not.
+
+(with-circular-references
+  (let* ((circle (make-node)))
+    (setf (node-next circle) circle)
+    (with-pointer (p circle 'node)
+      (let ((node (deref p 'node)))
+        (eq node (node-next node))))))
+@result{} T
+@end lisp
+
+@page
+@node Translators and Translatable Types
+@chapter Translators and Translatable Types
+
+TODO
+
+@menu
+* Translators::
+* Defining and Parsing Type Specifiers::
+* Primitive Types::
+* Immediate Types::
+* Aggregate Types::
+* Proxy Types::
+@end menu
+
+@node Translators, Defining and Parsing Type Specifiers, Translators and Translatable Types, Translators and Translatable Types
+@section Translators
+
+TODO
+
+@node Defining and Parsing Type Specifiers
+@section Defining and Parsing Type Specifiers
+
+TODO
+
+@node Primitive Types
+@section Primitive Types
+
+TODO
+
+@node Immediate Types
+@section Immediate Types
+
+TODO
+
+@node Aggregate Types
+@section Aggregate Types
+
+TODO
+
+@node Proxy Types
+@section Proxy Types
+
+TODO
+
+@page
+@node Built-in Types
+@chapter Built-in Types
+
+TODO
+
+@menu
+* Built-in Primitives::
+* References::
+* Arrays and Sequences::
+* Enumerations::
+* Structures and Unions::
+* Strings::
+* Strictly Aligned Types::
+* Filtered Types::
+* Const Types::
+@end menu
+
+@node Built-in Primitives, References, Built-in Types, Built-in Types
+@section Built-in Primitives
+
+TODO
+
+@node References
+@section References
+
+TODO
+
+@node Arrays and Sequences
+@section Arrays and Sequences
+
+TODO
+
+@node Enumerations
+@section Enumerations
+
+TODO
+
+@node Structures and Unions
+@section Structures and Unions
+
+TODO
+
+@node Strings
+@section Strings
+
+TODO
+
+@node Strictly Aligned Types
+@section Strictly Aligned Types
+
+TODO
+
+@node Filtered Types
+@section Filtered Types
+
+TODO
+
+@node Const Types
+@section Const Types
+
+TODO
+
+@page
+@node Functions
+@chapter Functions
+
+TODO
+
+@page
+@node Symbols Re-Exported from CFFI
+@chapter Symbols Re-Exported from CFFI
+
+TODO
+
+@page
+@node Glossary
+@appendix Glossary
+
+TODO
+
+@page
+@node Comprehensive Index
+@unnumbered Index
+@printindex cp
+
+@bye
